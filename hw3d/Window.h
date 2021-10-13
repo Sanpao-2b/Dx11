@@ -3,9 +3,10 @@
 #include "ChiliException.h"
 #include "Keyboard.h"
 #include "Mouse.h"
-
+#include "Graphics.h"
 //c++17 可以选择返回一个int还是一个空的optional 配合消息处理很好 optional<T> 相当于T类型变量和一个bool值的打包，其中的bool用来表示T变量是否为空
 #include <optional> 
+#include <memory> //智能指针
 class Window
 {
 	//异常处理成员类
@@ -45,12 +46,9 @@ public:
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 	void SetTitle(const std::string title); //设置窗口标题
-
-	//————————————————————————————————————————————————————————————————————————//
-	//从App类中的Go()函数中 搬到这里来了 
-	//静态 因为这个函数要处理所有窗口的消息，the one
 	static std::optional<int> ProcessMessages(); 
-	//————————————————————————————————————————————————————————————————————————//
+	Graphics& Gfx(); //用于返回指向图形对象的指针
+	
 private: 
 	static LRESULT CALLBACK HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
 	static LRESULT CALLBACK HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
@@ -62,6 +60,7 @@ private:
 	int width; 
 	int height;
 	HWND hWnd; //窗口句柄
+	std::unique_ptr<Graphics> pGfx; //私有属性 需要提供函数访问 不要直接像键盘和鼠标一样搞个变量， 因为hWnd拿不到 我们要先弄个空指针，然后在窗口默认构造中去传入hWnd
 };
 
 

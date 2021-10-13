@@ -77,6 +77,7 @@ Window::Window(int width, int height, const char * name) //移除了noexcept 否则无
 	
 	//显示窗口
 	ShowWindow(hWnd, SW_SHOWDEFAULT); 
+	pGfx = std::make_unique<Graphics>(hWnd);
 }
 
 
@@ -104,14 +105,18 @@ std::optional<int> Window::ProcessMessages()
 		//所以手动的取出msg中的成员message 判断是不是退出消息
 		if (msg.message == WM_QUIT)
 		{
-			return msg.wParam;
+			return (int)msg.wParam;
 		}
-
+	
 		TranslateMessage(&msg); //翻译判断是否产生WM_CHAR
 		DispatchMessage(&msg);  //把消息发送给 消息处理函数 消息处理函数会 把对应每个消息类型 产生不同的行为。
-		
-		return {}; //返回空的optional
-	}
+	}	
+	return {}; //返回空的optional
+}
+
+Graphics& Window::Gfx()
+{
+	return *pGfx;
 }
 
 //消息处理函数
