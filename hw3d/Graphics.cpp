@@ -53,6 +53,23 @@ Graphics::Graphics(HWND hWnd)
 		nullptr,
 		&pContext
 	);
+	//获取交换链的后缓存，创建一个空指针用于保存它(指向后缓存的目的是为了通过这个Texture创建一个渲染目标视图)
+	ID3D11Resource* pBackBuffer = nullptr;
+
+	//因为我们用的DXGI_SWAP_EFFECT_DISCARD所以第一个参数必须是0即只能读写编号0的缓存；用于操纵这个缓存的"接口的uuid“；指向后台缓冲区接口的指针
+	//这里跟QueryInterface很类似，其实就是获取了一个接口-0-
+	pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer));
+
+	//用获取的这个资源去创建 渲染目标视图
+	pDevice->CreateRenderTargetView(
+		pBackBuffer, //很明显需要一个ID3D11Resource*的东西，所以前面必须创建这么个指针，而这个指针指向了Texture(后缓存),so“渲染目标视图”是跟具体的一个Texture绑定的？
+		nullptr, //没传入渲染目标视图的描述结构体，使用默认方式创建即可
+		&pTarget //[out] 用一个指针变量填充渲染目标视图
+	);
+
+	//渲染目标视图已经创建好，并且存起来了， 指向后缓存的指针不需要了 释放掉
+	//疑问，Release()方法会减少 被指向的那个资源的引用次数，如果没有其他指针指向它 则它就被释放了？？ 不懂
+	pBackBuffer->Release();
 }
 
 Graphics::~Graphics()
@@ -64,6 +81,10 @@ Graphics::~Graphics()
 	if (pSwap != nullptr)
 	{
 		pSwap->Release();
+	}
+	if (pTarget != nullptr)
+	{
+		pTarget->Release();
 	}
 	if (pDevice != nullptr)
 	{
