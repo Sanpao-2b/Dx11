@@ -70,3 +70,9 @@ Graphics::~Graphics()
 		pDevice->Release();
 	}
 }
+
+void Graphics::EndFrame()
+{
+	//同步间隔：帧数 1-60帧， 2-30帧 标签：0
+	pSwap->Present(1u, 0u);
+}
