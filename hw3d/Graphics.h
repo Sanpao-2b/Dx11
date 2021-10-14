@@ -3,13 +3,15 @@
 #include "ChiliException.h"
 #include <d3d11.h>
 #include <vector>
-#include "DxgiInfoManager.h"
 
 class Graphics
 {
 public:
 	class Exception : public ChiliException
 	{
+		//继承基类构造函数,编译器不会生成默认构造函数，即Exception exp;报错 但是Exception exp(line , file)；可以
+		//目的初始化基类，这样就不用额外书写子类构造函数去初始化基类的构造函数了
+		//请看HrException的默认构造函数的实现
 		using ChiliException::ChiliException;
 	};
 
@@ -22,10 +24,8 @@ public:
 		HRESULT GetErrorCode() const noexcept;
 		std::string GetErrorString() const noexcept;
 		std::string GetErrorDescription() const noexcept;
-		std::string GetErrorInfo() const noexcept;
 	private:
 		HRESULT hr;
-		std::string info;
 	};
 
 	class DeviceRemovedException : public HrException
@@ -55,12 +55,7 @@ public:
 			[in] const FLOAT[4]        ColorRGBA            //一个4分量数组，表示填充渲染目标的颜色。
 		);
 	*/
-	void ClearBuffer(float red, float green, float blue) noexcept
-	{
-		//清除渲染目标视图需要一个浮点数组
-		const float color[] = {red, green, blue, 1.0f};
-		pContext->ClearRenderTargetView(pTarget, color);
-	}
+	void ClearBuffer(float red, float green, float blue) noexcept;
 private:
 	ID3D11Device* pDevice = nullptr;
 	IDXGISwapChain* pSwap = nullptr;

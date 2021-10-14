@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Dxerror">
+      <UniqueIdentifier>{96872423-7814-494d-b20e-4637e4efc046}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -43,7 +46,7 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="dxerr.cpp">
-      <Filter>源文件</Filter>
+      <Filter>Dxerror</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,7 +81,7 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="dxerr.h">
-      <Filter>头文件</Filter>
+      <Filter>Dxerror</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -93,13 +96,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DXGetErrorDescription.inl">
-      <Filter>头文件</Filter>
+      <Filter>Dxerror</Filter>
     </None>
     <None Include="DXGetErrorString.inl">
-      <Filter>头文件</Filter>
+      <Filter>Dxerror</Filter>
     </None>
     <None Include="DXTrace.inl">
-      <Filter>头文件</Filter>
+      <Filter>Dxerror</Filter>
     </None>
   </ItemGroup>
 </Project>

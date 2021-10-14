@@ -20,8 +20,9 @@ extern "C" {
 #endif
 
 	//--------------------------------------------------------------------------------------
-	// DXGetErrorString
+	// DXGetErrorString 提供该错误的宏名称
 	//--------------------------------------------------------------------------------------
+	 
 	const WCHAR* WINAPI DXGetErrorStringW(_In_ HRESULT hr);
 	const CHAR* WINAPI DXGetErrorStringA(_In_ HRESULT hr);
 #ifdef UNICODE
@@ -31,7 +32,7 @@ extern "C" {
 #endif
 	//--------------------------------------------------------------------------------------
 	// DXGetErrorDescription has to be modified to return a copy in a buffer rather than
-	// the original static string.
+	// the original static string. 下面是返回错误的详细描述
 	//--------------------------------------------------------------------------------------
 	void WINAPI DXGetErrorDescriptionW(_In_ HRESULT hr, _Out_cap_(count) WCHAR* desc, _In_ size_t count);
 	void WINAPI DXGetErrorDescriptionA(_In_ HRESULT hr, _Out_cap_(count) CHAR* desc, _In_ size_t count);

@@ -14,6 +14,7 @@ public:
 	class Exception : public ChiliException
 	{
 	public:    
+		//跟图形类的构造函数对比看 这里是子类构造函数中初始化基类
 		Exception(int line, const char* file, HRESULT hr) noexcept;//HRESULT窗口程序专属的错误类
 		const char* what() const noexcept override;
 		virtual const char* GetType() const noexcept;
