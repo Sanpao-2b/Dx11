@@ -13,7 +13,7 @@
 
 Graphics::Graphics(HWND hWnd)
 {
-	DXGI_SWAP_CHAIN_DESC sd = {};
+	DXGI_SWAP_CHAIN_DESC sd = {}; //Swapchain Description
 	sd.BufferDesc.Width = 0;
 	sd.BufferDesc.Height = 0;
 	sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -25,7 +25,7 @@ Graphics::Graphics(HWND hWnd)
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = 1;
-	sd.OutputWindow = hWnd;
+	sd.OutputWindow = (HWND)6969;  //故意改错 报错只显示65行出错 没有更具体的描述
 	sd.Windowed = TRUE;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.Flags = 0;
@@ -53,7 +53,7 @@ Graphics::Graphics(HWND hWnd)
 		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,
-		0,
+		D3D11_CREATE_DEVICE_DEBUG,//我们改动DEBUG模式试试,弹出窗口没变 但是输出窗口给了很详细的错误信息，
 		nullptr,
 		0,
 		D3D11_SDK_VERSION,
@@ -109,7 +109,7 @@ void Graphics::EndFrame()
 	//参数解释(1同步间隔：1代表60帧,2-30帧。2标签：不需要则0。。
 	//Present比较特殊，他可能会返回设备已移除异常，这是特殊异常，包含很多信息，必须用GetDeviceRemovedReason(),
 	//设备移除不是说你把显卡拔出了，而是显卡驱动崩溃之类的
-	if (FAILED(hr = pSwap->Present(1u.0u)))
+	if (FAILED(hr = pSwap->Present(1u,0u)))
 	{
 		if (hr == DXGI_ERROR_DEVICE_REMOVED)
 		{
@@ -149,6 +149,8 @@ const char * Graphics::HrException::what() const noexcept
 		<< "[Error String]" << GetErrorString() << std::endl
 		<< "[Error Description]" << GetErrorDescription() << std::endl
 		<< GetOriginString();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
 }
 
 const char * Graphics::HrException::GetType() const noexcept
@@ -175,5 +177,5 @@ std::string Graphics::HrException::GetErrorDescription() const noexcept
 
 const char * Graphics::DeviceRemovedException::GetType() const noexcept
 {
-	return "Chili Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)"
+	return "Chili Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)";
 }

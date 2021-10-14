@@ -9,20 +9,35 @@
 #include <memory> //智能指针
 class Window
 {
-	//异常处理成员类
 public:
+	//参考Graphics类 把Exception变成一个基类继承他基类构造函数，对子类提供一个静态方法
+	//并且把这个类也弄成了一个莫得卵用的类 用来生儿子的
 	class Exception : public ChiliException
 	{
-	public:    
-		//跟图形类的构造函数对比看 这里是子类构造函数中初始化基类
-		Exception(int line, const char* file, HRESULT hr) noexcept;//HRESULT窗口程序专属的错误类
-		const char* what() const noexcept override;
-		virtual const char* GetType() const noexcept;
+		using ChiliException::ChiliException;
+	public:
 		static std::string TranslateErrorCode(HRESULT hr) noexcept;//把hr错误代码 转换成人能看的字符串。。。
-		HRESULT GetErrorCode() const noexcept;                     //返回成员变量hr
-		std::string GetErrorString() const noexcept;               //调用TranslateErrorCode() 并返回
+	};
+
+	class HrException : public Exception
+	{
+	public:
+		HrException(int line, const char* file, HRESULT hr) noexcept;//HRESULT窗口程序专属的错误类
+		const char* what() const noexcept override;
+		virtual const char* GetType() const noexcept override;
+
+		HRESULT GetErrorCode() const noexcept;         //返回成员变量hr
+		std::string GetErrorDescription() const noexcept;    //调用TranslateErrorCode() 并返回
 	private:
 		HRESULT hr;
+	};
+
+	//如果成员pGfx为空 则抛出异常 
+	class NoGfxException : public Exception
+	{
+	public:
+		using Exception::Exception;
+		const char* GetType() const noexcept override;
 	};
 
 private:
@@ -65,5 +80,6 @@ private:
 };
 
 
-#define CHWND_EXCEPT(hr) Window::Exception(__LINE__,__FILE__,hr)
-#define CHWND_LAST_EXCEPT() Window::Exception(__LINE__,__FILE__,GetLastError())
+#define CHWND_EXCEPT(hr) Window::HrException(__LINE__,__FILE__,hr)
+#define CHWND_LAST_EXCEPT() Window::HrException(__LINE__,__FILE__,GetLastError())
+#define CHWND_NOGFX_EXCEPT() Window::NoGfxException(__LINE__,__FILE__)
