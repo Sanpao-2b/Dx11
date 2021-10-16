@@ -78,6 +78,7 @@ Window::Window(int width, int height, const char * name) //移除了noexcept 否则无
 	
 	//显示窗口
 	ShowWindow(hWnd, SW_SHOWDEFAULT); 
+	//对图形类对象进行初始化赋值
 	pGfx = std::make_unique<Graphics>(hWnd);
 }
 

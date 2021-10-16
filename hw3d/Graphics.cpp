@@ -35,7 +35,7 @@ Graphics::Graphics(HWND hWnd)
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = 1;
-	sd.OutputWindow = (HWND)696969;  //故意改错 报错只显示65行出错 没有更具体的描述
+	sd.OutputWindow = hWnd;  
 	sd.Windowed = TRUE;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.Flags = 0;
@@ -100,10 +100,6 @@ Graphics::Graphics(HWND hWnd)
 		nullptr, //没传入渲染目标视图的描述结构体，使用默认方式创建即可
 		&pTarget //[out] 用一个指针变量填充渲染目标视图
 	));
-
-	//渲染目标视图已经创建好，并且存起来了， 指向后缓存的指针不需要了 释放掉
-	//疑问，Release()方法会减少 被指向的那个资源的引用次数，如果没有其他指针指向它 则它就被释放了？？ 不懂
-	pBackBuffer->Release();
 }
 
 
@@ -137,6 +133,77 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	const float color[] = { red, green, blue, 1.0f };
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
+
+void Graphics::DrawTestTriangle()
+{
+	HRESULT hr;
+
+	//1.Input Assembler输入装配器阶段：指定三角形定点位置，输入顶点，装配成三角形输出给Vertex shader
+	//pContext->可以提供一大堆函数，看前缀可以知道对应渲染管线的什么阶段。 比如IA开头的都是输入装配器阶段
+	namespace wrl = Microsoft::WRL;
+	
+	// CreateBuffer()传入创建一个指针当pp
+	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
+
+	// CreateBuffer()需要传入子资源数据 即缓冲区具体存放的什么玩意儿。
+	struct Vertex
+	{
+		float x;
+		float y;
+	};
+	// 存放3个点,注意必须顺时针，D3D用顺时针和逆时针区分正反面，反面是不显示的
+	const Vertex vertices[] =
+	{
+		{ 0.0f, 0.5f },
+		{ 0.5f, -0.5f },
+		{ -0.5f, -0.5f },
+	};
+	/*
+	typedef struct D3D11_SUBRESOURCE_DATA
+	{
+	const void *pSysMem;        //指向初始化数据
+	UINT       SysMemPitch;		//只跟纹理有关 别的类型不用管
+	UINT       SysMemSlicePitch;//只跟纹理有关 不管
+	} D3D11_SUBRESOURCE_DATA;
+	*/
+	D3D11_SUBRESOURCE_DATA sd = {};
+	sd.pSysMem = vertices;
+
+	// CreateBuffer()需要缓冲区数组描述符
+	D3D11_BUFFER_DESC bd = {};
+	bd.ByteWidth = sizeof(vertices);			//UINT			缓冲区的大小(以字节为单位)
+	bd.Usage = D3D11_USAGE_DEFAULT;				//D3D11_USAGE	确定预期如何读取和写入缓冲区,通常是 D3D11_USAGE_DEFAULT GPU可读写
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;	//UINT			表示这缓存将要成为什么样的缓存，顶点缓存、索引缓存、常量缓存等等 
+	bd.CPUAccessFlags = 0u;						//UINT			CPU访问标志  是否允许CPU访问 0的不许
+	bd.MiscFlags = 0u;							//UINT			杂项标志 或 0(如果未使用)。
+	bd.StructureByteStride = sizeof(Vertex);	//UNIT			每个顶点的大小
+
+	// 因为IASetVertexBuffers() 需要传入ID3D11Buffer数组 所以创建
+	GFX_THROW_INFO(pDevice->CreateBuffer(&bd, &sd, &pVertexBuffer));
+	
+	/*
+	void IASetVertexBuffers(
+	[in]           UINT         StartSlot,    用于绑定的第一个输入槽，数组额外的缓冲区会被隐式绑定到后面的输入草
+	[in]           UINT         NumBuffers,	  数组中的顶点缓存的数量
+	[in, optional] ID3D11Buffer * const *ppVertexBuffers, 指向顶点缓冲区数组的指针
+	[in, optional] const UINT   *pStrides,	    步幅值，就是一个顶点数据的大小，单位是字节byte
+	[in, optional] const UINT   *pOffsets		偏移量，！注意顶点缓存不只是装顶点数据 还有颜色、法线，这里我们只有顶点数据则偏移0
+	);
+	*/
+	// 将顶点缓冲区数组绑定到渲染管线的 输入装配器阶段
+	const UINT stride = sizeof(Vertex);
+	const UINT offset = 0u;
+	pContext->IASetVertexBuffers(
+		0,1u,
+		&pVertexBuffer,
+		&stride,		//步幅 每组数据的大小
+		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
+		);
+
+	//绘制三角形的函数
+	pContext->Draw(3u, 0u);//形参：1.顶点数量 2.起始位置
+}
+
 
 
 // Graphics exception 
