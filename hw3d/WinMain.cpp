@@ -35,6 +35,7 @@ int CALLBACK WinMain(
 	}
 
 	// 如果throw出来了一个ChiliException类型(包括子类)的一个变量，则执行
+	// 最抛出的异常都会在这里被捕捉到，以弹窗的形式出现，显示的文字是 括号中的形参指针，指向哪个类中的哪个异常成员类，就显示他里面的what()返回的字符串
 	catch (const ChiliException& e)
 	{
 		MessageBox(nullptr, e.what(), e.GetType(), MB_OK | MB_ICONEXCLAMATION);//ok按钮和感叹号

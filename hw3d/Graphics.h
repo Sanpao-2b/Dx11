@@ -3,13 +3,13 @@
 #include "ChiliException.h"
 #include <d3d11.h>
 #include <vector>
-
+#include "DxgiInfoManager.h"
 class Graphics
 {
 public:
 	class Exception : public ChiliException
 	{
-		//继承基类构造函数,编译器不会生成默认构造函数，即Exception exp;报错 但是Exception exp(line , file)；可以
+		//继承基类构造函数,编译器不会生成默认构造函数，即无法实例化此类，Exception exp;会报错  但是Exception exp(line , file)；可以
 		//目的初始化基类，这样就不用额外书写子类构造函数去初始化基类的构造函数了
 		//请看HrException的默认构造函数的实现
 		using ChiliException::ChiliException;
@@ -18,14 +18,20 @@ public:
 	class HrException : public Exception
 	{
 	public:
-		HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs = {}) noexcept;
-		const char* what() const noexcept override;
+		//std::vector<std::string> infoMsgs = {} 用于接收传入构造函数的DxgiInfoManager类抓到的调试信息
+		//本应是DxgiInfoManager.h之后加入的， 我copy的时候不小心先搞进来了
+		HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs = {} ) noexcept;
+		const char* what() const noexcept override;  //显示错误消息的哦
+		
 		const char* GetType() const noexcept override;
 		HRESULT GetErrorCode() const noexcept;
 		std::string GetErrorString() const noexcept;
 		std::string GetErrorDescription() const noexcept;
+		std::string GetErrorInfo() const noexcept;   //用于从DxgiInfoManager类中获取信息的
+
 	private:
 		HRESULT hr;
+		std::string info;  //用于存放DxgiInfoManager类搞出来的 输出窗口的调试信息 在HrException的构造函数中
 	};
 
 	class DeviceRemovedException : public HrException
@@ -33,6 +39,7 @@ public:
 		using HrException::HrException;
 	public:
 		const char* GetType() const noexcept override;
+	
 	private:
 		std::string reason;
 	};
@@ -57,6 +64,10 @@ public:
 	*/
 	void ClearBuffer(float red, float green, float blue) noexcept;
 private:
+#ifndef NDEBUG    //ifndef 是 if no def  没有定义 不是DEBUG 相当于是DEBUG- - 好你妈拗口
+	DxgiInfoManager infoManager;
+#endif //仅在调式模式下存在，  release模式不会有
+
 	ID3D11Device* pDevice = nullptr;
 	IDXGISwapChain* pSwap = nullptr;
 	ID3D11DeviceContext* pContext = nullptr;

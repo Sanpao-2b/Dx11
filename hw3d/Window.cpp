@@ -2,6 +2,7 @@
 #include <sstream>
 #include "resource.h"
 
+//这是在初始化wndClass静态实例对象 调用了默认构造函数？
 Window::WindowClass Window::WindowClass::wndClass;
 
 Window::WindowClass::WindowClass() noexcept
@@ -28,7 +29,7 @@ Window::WindowClass::WindowClass() noexcept
 
 Window::WindowClass::~WindowClass()
 {
-	UnregisterClass(wndClassName, GetInstance()); 
+	UnregisterClass(wndClassName, GetInstance()); //这里会管理单例模式中的对象析构问题吧
 }
 
 const char * Window::WindowClass::GetName() noexcept

@@ -10,10 +10,10 @@
 class Window
 {
 public:
-	//参考Graphics类 把Exception变成一个基类继承他基类构造函数，对子类提供一个静态方法
 	//并且把这个类也弄成了一个莫得卵用的类 用来生儿子的
 	class Exception : public ChiliException
 	{
+		//继承基类构造函数
 		using ChiliException::ChiliException;
 	public:
 		static std::string TranslateErrorCode(HRESULT hr) noexcept;//把hr错误代码 转换成人能看的字符串。。。
@@ -41,6 +41,7 @@ public:
 	};
 
 private:
+	//单例模式，全程序仅允许存在一个对象，私有构造函数，便是让任何人不得创建对象
 	class WindowClass 
 	{
 	public: 
@@ -53,7 +54,7 @@ private:
 		WindowClass& operator=(const WindowClass&) = delete;
 	private:
 		static constexpr const char* wndClassName = "Chili Direct3D Engine Window";
-		static WindowClass wndClass; //运行前就创建了
+		static WindowClass wndClass; //定义静态对象，需要在类外初始化 cpp开头就初始化了
 		HINSTANCE hInst;
 	};
 public:

@@ -5,12 +5,20 @@
 #pragma comment(lib,"d3d11.lib")//用代码链接到这个库，比在项目属性里面的LINK中设置要灵活一些， 复制代码到别的项目 可以不用重新设置
 
 //定义宏，让下面的抛出异常的代码更简洁
+//hrcall: 包裹一个函数，检查函数返值HRESULT是否代表失败 是则抛出异常
+//    hr: 直接传入俺们定义的 hr变量
+#define GFX_EXCEPT_NOINFO(hr) Graphics::HrException(__LINE__, __FILE__, (hr))
+#define GFX_THROW_NOINFO(hrcall) if(FAILED(hr = (hrcall))) throw Graphics::HrException(__LINE__, __FILE__, hr)
 
-//包裹一个函数，检查函数返值HRESULT是否代表失败 是则抛出异常
-#define GFX_THROW_FAILED(hrcall) if(FAILED(hr = (hrcall))) throw Graphics::HrException(__LINE__, __FILE__, hr)
-//专门处理设备被移除的异常，
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, hr)
-
+#ifndef NDEBUG //如果是调试模式 采用这三个宏 调试模式比发布模式多出了由infoManager类抓到的额外的输出窗口的详细错误信息
+#define GFX_EXCEPT(hr) Graphics::HrException( __LINE__, __FILE__, (hr), infoManager.GetMessages())  //接收错误代码，传给Exception基类的构造函数，并且传入由infoManager类抓到的输出窗口的信息
+#define GFX_THROW_INFO(hrcall) infoManager.Set(); if(FAILED(hr = (hrcall))) throw GFX_EXCEPT(hr)	//注意这里的意思是：包裹D3D函数前 先调用Set() 之后就只会获取到有关最近调用的这个函数的信息
+#define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr), infoManager.GetMessages()) //这里也同上，额外传入刚刚创建好的 InfoManager类抓出来的信息
+#else          //否则就是发布模式，采用这三个宏
+#define GFX_EXCEPT(hr) Graphics::HrException(__LINE__, __FILE__, (hr) )
+#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
+#define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
+#endif
 Graphics::Graphics(HWND hWnd)
 {
 	DXGI_SWAP_CHAIN_DESC sd = {}; //Swapchain Description
@@ -25,10 +33,15 @@ Graphics::Graphics(HWND hWnd)
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = 1;
-	sd.OutputWindow = (HWND)6969;  //故意改错 报错只显示65行出错 没有更具体的描述
+	sd.OutputWindow = (HWND)696969;  //故意改错 报错只显示65行出错 没有更具体的描述
 	sd.Windowed = TRUE;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.Flags = 0;
+
+	UINT swapCreateFlags = 0u;
+#ifndef NDEBUG  //或等于 用于自动控制传入"创建设备和交换链"函数中的第四个参数，如果调试模式下则传入0x2, 如果发布模式则是0 
+	swapCreateFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
 	//用于检查d3d函数返回值,因为宏里面是用hr去接收返回值的，所以必须要有一个
 	HRESULT hr;
@@ -49,11 +62,11 @@ Graphics::Graphics(HWND hWnd)
 		[out, optional] ID3D11DeviceContext        **ppImmediateContext
 );
 */
-	GFX_THROW_FAILED(D3D11CreateDeviceAndSwapChain(
+	GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
 		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,
-		D3D11_CREATE_DEVICE_DEBUG,//我们改动DEBUG模式试试,弹出窗口没变 但是输出窗口给了很详细的错误信息，
+		swapCreateFlags,//如果是DEBUG模式，则输出窗口会产生错误的详尽描述，用Dxgiinfomanager类抓出来 放到弹窗上
 		nullptr,
 		0,
 		D3D11_SDK_VERSION,
@@ -68,10 +81,10 @@ Graphics::Graphics(HWND hWnd)
 
 	//因为我们用的DXGI_SWAP_EFFECT_DISCARD所以第一个参数必须是0即只能读写编号0的缓存；用于操纵这个缓存的"接口的uuid“；指向后台缓冲区接口的指针
 	//这里跟QueryInterface很类似，其实就是获取了一个接口-0-
-	GFX_THROW_FAILED(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)));
+	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)));
 
 	//用获取的这个资源去创建 渲染目标视图
-	GFX_THROW_FAILED(pDevice->CreateRenderTargetView(
+	GFX_THROW_INFO(pDevice->CreateRenderTargetView(
 		pBackBuffer, //很明显需要一个ID3D11Resource*的东西，所以前面必须创建这么个指针，而这个指针指向了Texture(后缓存),so“渲染目标视图”是跟具体的一个Texture绑定的？
 		nullptr, //没传入渲染目标视图的描述结构体，使用默认方式创建即可
 		&pTarget //[out] 用一个指针变量填充渲染目标视图
@@ -106,6 +119,9 @@ void Graphics::EndFrame()
 {
 
 	HRESULT hr;
+#ifndef NDEBUG //调试模式下 把这个Set()函数放在这个位置
+	infoManager.Set();
+#endif
 	//参数解释(1同步间隔：1代表60帧,2-30帧。2标签：不需要则0。。
 	//Present比较特殊，他可能会返回设备已移除异常，这是特殊异常，包含很多信息，必须用GetDeviceRemovedReason(),
 	//设备移除不是说你把显卡拔出了，而是显卡驱动崩溃之类的
@@ -113,12 +129,13 @@ void Graphics::EndFrame()
 	{
 		if (hr == DXGI_ERROR_DEVICE_REMOVED)
 		{
-			//如果Present函数抛出异常，并且确实是设备移除异常，则调用下面的函数查看详细原因，并把行、文件位置 HRESULT 传入异常类并抛出异常
+			//如果Present函数抛出异常，并且确实是设备移除异常，则调用下面宏，弹窗显示原因
+			//所有的图形类的异常宏都会分调试/发布模式了哦
 			throw GFX_DEVICE_REMOVED_EXCEPT(pDevice->GetDeviceRemovedReason());
 		}
 		else
 			//否则不是设备移除异常，正常输出HRESULT异常信息
-			GFX_THROW_FAILED(hr);
+			throw GFX_EXCEPT(hr);
 	}
 }
 
@@ -132,11 +149,22 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 
 // Graphics exception 
 
-Graphics::HrException::HrException(int line, const char * file, HRESULT hr, std::vector<std::string> infoMsgs) noexcept
+Graphics::HrException::HrException(int line, const char * file, HRESULT hr,  std::vector<std::string> infoMsgs  ) noexcept
 	:
 	Exception(line, file), //对父类Exception进行初始化， 父类的Exception(line, file)又是对他父类Chiliexception的初始化
 	hr(hr)  //初始化自己的成员变量hr
 {	
+	//每个消息都占一行; for循环C++11 新特性，遍历容器每个元素
+	for (const auto& m : infoMsgs)
+	{
+		info += m;
+		info.push_back('\n');
+	}
+	// 如果info是有信息的，那么必然最后一行是空的 把这一行移除掉
+	if (!info.empty())
+	{
+		info.pop_back();
+	}
 }
 
 const char * Graphics::HrException::what() const noexcept
@@ -147,8 +175,13 @@ const char * Graphics::HrException::what() const noexcept
 		<< "[Error code] 0x" << std::hex << std::uppercase << GetErrorCode()
 		<< std::dec << "(" << (unsigned long)GetErrorCode() << ")" << std::endl
 		<< "[Error String]" << GetErrorString() << std::endl
-		<< "[Error Description]" << GetErrorDescription() << std::endl
-		<< GetOriginString();
+		<< "[Error Description]" << GetErrorDescription() << std::endl;
+	//如果info中有消息就把他显示出来，没有就算了
+	if (!info.empty())
+	{
+		oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl << std::endl;
+	}
+	oss << GetOriginString();
 	whatBuffer = oss.str();
 	return whatBuffer.c_str();
 }
@@ -175,7 +208,13 @@ std::string Graphics::HrException::GetErrorDescription() const noexcept
 	return buf;
 }
 
+std::string Graphics::HrException::GetErrorInfo() const noexcept
+{
+	return info;
+}
+
 const char * Graphics::DeviceRemovedException::GetType() const noexcept
 {
 	return "Chili Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)";
 }
+
