@@ -2,6 +2,7 @@
 #include "ChiliWin.h"
 #include "ChiliException.h"
 #include <d3d11.h>
+#include <wrl.h>    //COM组件 包含了COMPointer类 比如Comptr指向一个COM对象，并且有引用计数
 #include <vector>
 #include "DxgiInfoManager.h"
 class Graphics
@@ -47,7 +48,7 @@ public:
 	Graphics(HWND hWnd);
 	Graphics(const Graphics&) = delete;
 	Graphics& operator=(const Graphics&) = delete;
-	~Graphics();
+	~Graphics() = default;
 	
 	//给图形类添加一些行为
 	//前后缓存翻转，这个函数是其他所有函数的前提，如果不翻转后缓存到前缓存，将永远看不到内容
@@ -67,9 +68,19 @@ private:
 #ifndef NDEBUG    //ifndef 是 if no def  没有定义 不是DEBUG 相当于是DEBUG- - 好你妈拗口
 	DxgiInfoManager infoManager;
 #endif //仅在调式模式下存在，  release模式不会有
-
-	ID3D11Device* pDevice = nullptr;
-	IDXGISwapChain* pSwap = nullptr;
-	ID3D11DeviceContext* pContext = nullptr;
-	ID3D11RenderTargetView* pTarget = nullptr; //早就创建好了- - 
+	
+	Microsoft::WRL::ComPtr<ID3D11Device> pDevice;
+	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 };
+
+/*
+	unique_ptr 去指向COM对象，不能自动释放COM对象 还必须手动释放
+	并且如果需要pp去接收返回值，由于unique_ptr是封装的，获取不到内部那个指针的地址，所以无法作为pp传入
+	从而我们必须用普通指针的pp去接收返回值，然后赋值给unique_ptr 这样很麻烦
+	COM对象是可以归多个Comptr去指向的，并且有引用计数，而unique_ptr必须独占
+	comptr还有很多好用的函数。
+	最重要的是&
+
+*/

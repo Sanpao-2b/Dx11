@@ -2,6 +2,8 @@
 #include "dxerr.h"
 #include <sstream>
 
+namespace wrl = Microsoft::WRL;
+
 #pragma comment(lib,"d3d11.lib")//用代码链接到这个库，比在项目属性里面的LINK中设置要灵活一些， 复制代码到别的项目 可以不用重新设置
 
 //定义宏，让下面的抛出异常的代码更简洁
@@ -71,21 +73,30 @@ Graphics::Graphics(HWND hWnd)
 		0,
 		D3D11_SDK_VERSION,
 		&sd,
-		&pSwap,
-		&pDevice,
-		nullptr,
-		&pContext
+		&pSwap,       
+		&pDevice,     
+		nullptr,      
+		&pContext   
+		/*
+			pSwap,pDevice这几个都是智能指针了 看起来&是取的智能指针的地址啊 我们需要的是它内部维护的真正的指针的地址去填充这个指针，
+			其实是因为Comptr重载了&运算符，可以正确返回内部维护的那个普通指针的地址 正确的pp。但是！Comptr如果取地址 他首先会释放自己指向的那个空间，然后再返回空间的地址，
+			很合理吧 因为我想填充，所以先释放掉原来存的那块内存的东西，这样不会造成内存泄漏啊，之后就无法使用那块内存的东西了。
+			我们想填充，这里这样用&是没错的，因为Comptr还没指向任何有用的东西,释放了个寂寞。但有时候你不想填充指针，只是想单纯的获取我维护的指针的真的地址，&一用 直接释放了。。。
+			真要获取维护的那个指针的地址请使用pBackBuffer->GetAddressOf()，&pSwap的效果其实就是pSwap->ReleaseAndGetAddress()一样 获取并且释放
+		*/
 	));
-	//获取交换链的后缓存，创建一个空指针用于保存它(指向后缓存的目的是为了通过这个Texture创建一个渲染目标视图)
-	ID3D11Resource* pBackBuffer = nullptr;
+	//获取交换链的后缓存，创建一个智能指针用于保存它(创建这个指针的目的：通过指向一个Texture对象创建一个渲染目标视图)
+	//智能指针其实是个模板类，重载了->运算符，使他和普通指针一样的用法，但是如果要获得这个指针的地址即pp 要用Get()函数
+	wrl::ComPtr<ID3D11Resource> pBackBuffer;
 
 	//因为我们用的DXGI_SWAP_EFFECT_DISCARD所以第一个参数必须是0即只能读写编号0的缓存；用于操纵这个缓存的"接口的uuid“；指向后台缓冲区接口的指针
 	//这里跟QueryInterface很类似，其实就是获取了一个接口-0-
-	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)));
+	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer));
 
 	//用获取的这个资源去创建 渲染目标视图
+	//如果此函数 抛出异常了，程序就终止了 pBackBuffer指向的内存，就不能正常释放了，我们需要把指针包裹在一个对象里，当该对象超出范围时，会自动释放这个指针
 	GFX_THROW_INFO(pDevice->CreateRenderTargetView(
-		pBackBuffer, //很明显需要一个ID3D11Resource*的东西，所以前面必须创建这么个指针，而这个指针指向了Texture(后缓存),so“渲染目标视图”是跟具体的一个Texture绑定的？
+		pBackBuffer.Get(),//获取指向的那个对象的地址，不能用pBackBuffer->Get()，因为被指向的Texture没有Get()，pBackBuffer本质是对象，必须用"."，调用自己的函数
 		nullptr, //没传入渲染目标视图的描述结构体，使用默认方式创建即可
 		&pTarget //[out] 用一个指针变量填充渲染目标视图
 	));
@@ -95,25 +106,6 @@ Graphics::Graphics(HWND hWnd)
 	pBackBuffer->Release();
 }
 
-Graphics::~Graphics()
-{
-	if (pContext != nullptr)
-	{
-		pContext->Release();
-	}
-	if (pSwap != nullptr)
-	{
-		pSwap->Release();
-	}
-	if (pTarget != nullptr)
-	{
-		pTarget->Release();
-	}
-	if (pDevice != nullptr)
-	{
-		pDevice->Release();
-	}
-}
 
 void Graphics::EndFrame()
 {
@@ -143,7 +135,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 {
 	//清除渲染目标视图需要一个浮点数组
 	const float color[] = { red, green, blue, 1.0f };
-	pContext->ClearRenderTargetView(pTarget, color);
+	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
 

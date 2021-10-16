@@ -37,15 +37,7 @@ DxgiInfoManager::DxgiInfoManager()
 
 	HRESULT hr;
 	//这里调用DxgiGetDebugInterface 指向的那个函数， 差不多就是把错误信息装进IDXGIInfoQueue
-	GFX_THROW_NOINFO(DxgiGetDebugInterface(__uuidof(IDXGIInfoQueue), reinterpret_cast<void**>(&pDxgiInfoQueue)));
-}
-
-DxgiInfoManager::~DxgiInfoManager()
-{
-	if (pDxgiInfoQueue != nullptr)
-	{
-		pDxgiInfoQueue->Release();
-	}
+	GFX_THROW_NOINFO(DxgiGetDebugInterface(__uuidof(IDXGIInfoQueue), &pDxgiInfoQueue));
 }
 
 //如果没有这个函数，那我们将会获取到从程序创建到现在为止的全部的输出窗口消息， 所以我们在 DxgiInfoManager::GetMessages()之前，先调用一次Set()记录目前的消息数量，

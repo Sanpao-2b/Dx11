@@ -1,11 +1,15 @@
 #pragma once
-#include "ChiliException.h"
+#include "ChiliWin.h"
+#include <wrl.h>
 #include <vector>
+#include <dxgidebug.h>
+
+
 class DxgiInfoManager
 {
 public:
 	DxgiInfoManager(); //从库中找出DXGIGetDebugInterface()这个接口，获取到调试队列(存放输出窗口的调试信息的一个队列)，用我们定义的指针pDxgiInfoQueue指向他
-	~DxgiInfoManager();//释放那个调试队列
+	~DxgiInfoManager() = default;//释放那个调试队列
 
 	DxgiInfoManager(const DxgiInfoManager&) = delete;
 	DxgiInfoManager& operator=(const DxgiInfoManager&) = delete;
@@ -16,6 +20,6 @@ private:
 	unsigned long long next = 0u;
 
 	//如果要获取输出窗口的信息，需要这个东西指向输出窗口消息队列 具体在cpp文件中可以看到
-	struct IDXGIInfoQueue* pDxgiInfoQueue = nullptr;
+	Microsoft::WRL::ComPtr<IDXGIInfoQueue> pDxgiInfoQueue;
 };
 
