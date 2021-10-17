@@ -200,7 +200,7 @@ void Graphics::DrawTestTriangle()
 	const UINT offset = 0u;
 	pContext->IASetVertexBuffers(
 		0,1u,
-		&pVertexBuffer,
+		pVertexBuffer.GetAddressOf(), //这里出错了 他需要一个pp 但不是用于填充，它内部是取出pp指向的对象，所以不能直接取地址 这样会释放掉被指向的缓存
 		&stride,		//步幅 每组数据的大小
 		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
 		);
@@ -233,6 +233,24 @@ void Graphics::DrawTestTriangle()
 			我们可以渲染多个Texture，然后通过组合/混合等方式 把他们都搞到同一个后缓存上。这就是"后处理"这块的知识了，
 	*/
 
+	// ————绑定渲染目标 Render Target 如果不绑定这个东西 那D3D不知道像素着色器应该输出到哪里去 OM Oput Merge 阶段
+	// 加了s 复数 则肯定需要一个数组的指针了 长得像pp,我们已经创建过 渲染目标了pTarget 当做只有一个元素的数组即可,
+	//	！！！！注意不能&pTarget,这样会释放掉指向的对象,用GetAddressOf()来获取内部那个指针的地址 pp。
+	// 没用到深度缓存 nullptr即可
+	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+
+	// ————配置视口Viewport
+	// 因为把buffer上的东西映射到屏幕可以有很多方法，比如映射过去只占屏幕的左上角一块区域， 这样屏幕的其他区域可以用别的buffer去映射，从而实现分屏 或者是映射HUD
+	// 不需要绑定到渲染管线，只需要创建一个结构体，然后用函数指定它即可
+	D3D11_VIEWPORT vp;
+	vp.Width = 800;
+	vp.Height = 600;
+	vp.MinDepth = 0;
+	vp.MaxDepth = 1;
+	vp.TopLeftX = 0; //左上角的位置
+	vp.TopLeftY = 0;
+	// RS——Rasterize Stage  注意有s 说明需要一个数组，我们用取地址指向这个地址，就像是一个只有一个元素的数组
+	pContext->RSSetViewports(1u, &vp);
 	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
 	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)sizeof(vertices), 0u));//形参：1.顶点数量 2.起始位置
 }
