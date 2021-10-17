@@ -3,7 +3,12 @@
 #include <wrl.h>
 #include <vector>
 #include <dxgidebug.h>
-
+/*
+	注意这个类：
+	处于DEBUG模式下，
+	当我们用宏包裹的函数发生错误时，弹窗抛出异常，并且抓取这个函数"出错的时候"的输出窗口中的额外信息额外的加到弹窗上
+	但是我们还需要一个组件，实现某些不返回HRESULT的函数"调用"时，抓到输出窗有关该函数调用而产生的错误信息
+*/
 
 class DxgiInfoManager
 {

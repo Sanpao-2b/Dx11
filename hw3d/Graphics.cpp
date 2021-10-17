@@ -16,10 +16,14 @@ namespace wrl = Microsoft::WRL;
 #define GFX_EXCEPT(hr) Graphics::HrException( __LINE__, __FILE__, (hr), infoManager.GetMessages())  //接收错误代码，传给Exception基类的构造函数，并且传入由infoManager类抓到的输出窗口的信息
 #define GFX_THROW_INFO(hrcall) infoManager.Set(); if(FAILED(hr = (hrcall))) throw GFX_EXCEPT(hr)	//注意这里的意思是：包裹D3D函数前 先调用Set() 之后就只会获取到有关最近调用的这个函数的信息
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr), infoManager.GetMessages()) //这里也同上，额外传入刚刚创建好的 InfoManager类抓出来的信息
+//也是借用infoManager类中的抓窗口的方法，抓的函数不同 这里抓那些不返回HRESULT 的函数
+//流程宏接收整个函数作为输入值， 直接替换成后面这一大串：调用函数前先set()记录输出窗口的当前信息数->调用传入的函数->用v获取当前输出窗口新产生的消息->if判断如果新产生了消息则说明出错->抛出异常
+#define GFX_THROW_INFO_ONLY(call) infoManager.Set(); (call); {auto v = infoManager.GetMessages(); if(!v.empty()) {throw Graphics::InfoException(__LINE__, __FILE__, v);}}
 #else          //否则就是发布模式，采用这三个宏
 #define GFX_EXCEPT(hr) Graphics::HrException(__LINE__, __FILE__, (hr) )
 #define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
+#define GFX_THROW_INFO_ONLY(call) (call)
 #endif
 Graphics::Graphics(HWND hWnd)
 {
@@ -200,8 +204,8 @@ void Graphics::DrawTestTriangle()
 		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
 		);
 
-	//绘制三角形的函数
-	pContext->Draw(3u, 0u);//形参：1.顶点数量 2.起始位置
+	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
+	GFX_THROW_INFO_ONLY(pContext->Draw(3u, 0u));//形参：1.顶点数量 2.起始位置
 }
 
 
@@ -277,3 +281,39 @@ const char * Graphics::DeviceRemovedException::GetType() const noexcept
 	return "Chili Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)";
 }
 
+Graphics::InfoException::InfoException(int line, const char * file, std::vector<std::string> infoMsgs) noexcept
+	:
+	Exception(line, file)
+{
+	// 新特性 遍历容器每个元素即字符串，添加到成员变量info中，每个元素独占一行
+	for ( const auto& m : infoMsgs)
+	{
+		info += m;
+		info.push_back('\n');
+	}
+	// 如果最后一行是空的则清除
+	if (!info.empty())
+	{
+		info.pop_back(); 
+	}
+}
+
+const char * Graphics::InfoException::what() const noexcept
+{
+	std::ostringstream oss;
+	oss << GetType() << std::endl
+		<< "\n[Error Info]\n" << GetErrorInfo() << std::endl << std::endl;
+	oss << GetOriginString();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
+}
+
+const char * Graphics::InfoException::GetType() const noexcept
+{
+	return "Chili Graphics Info Exception";
+}
+
+std::string Graphics::InfoException::GetErrorInfo() const noexcept
+{
+	return info;
+}

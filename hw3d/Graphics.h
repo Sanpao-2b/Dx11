@@ -16,6 +16,7 @@ public:
 		using ChiliException::ChiliException;
 	};
 
+	//抓HRESULT
 	class HrException : public Exception
 	{
 	public:
@@ -31,8 +32,19 @@ public:
 		std::string GetErrorInfo() const noexcept;   //用于从DxgiInfoManager类中获取信息的
 
 	private:
-		HRESULT hr;
+		HRESULT hr;     //存储HRESULT 因为是用这个组件去设计宏包裹那些返回HRESULT的函数 
 		std::string info;  //用于存放DxgiInfoManager类搞出来的 输出窗口的调试信息 在HrException的构造函数中
+	};
+	//返回值为void 那就抓输出窗的 Infomation
+	class InfoException : public Exception
+	{
+	public:
+		InfoException(int line, const char* file, std::vector<std::string> infoMsgs) noexcept;
+		const char* what() const noexcept override;
+		const char* GetType() const noexcept override;
+		std::string GetErrorInfo() const noexcept;
+	private:
+		std::string info;   //用于那些没有HRESULT返回值的函数,用info存放输出窗口抓到的信息
 	};
 
 	class DeviceRemovedException : public HrException

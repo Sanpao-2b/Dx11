@@ -14,7 +14,7 @@ public:
 private:
 	int line;        //出错的行数
 	std::string file;//出错的文件
-protected:
+protected: //孩子可以访问
 	mutable std::string whatBuffer; 
 };
 
