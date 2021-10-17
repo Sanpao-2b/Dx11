@@ -13,7 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Dxerror">
+    <Filter Include="Shader">
+      <UniqueIdentifier>{52c61a9b-4cd4-48bd-85e0-5140e1d025cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dxerr">
       <UniqueIdentifier>{96872423-7814-494d-b20e-4637e4efc046}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -46,7 +49,7 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="dxerr.cpp">
-      <Filter>Dxerror</Filter>
+      <Filter>Dxerr</Filter>
     </ClCompile>
     <ClCompile Include="DxgiInfoManager.cpp">
       <Filter>源文件</Filter>
@@ -84,7 +87,7 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="dxerr.h">
-      <Filter>Dxerror</Filter>
+      <Filter>Dxerr</Filter>
     </ClInclude>
     <ClInclude Include="DxgiInfoManager.h">
       <Filter>头文件</Filter>
@@ -102,13 +105,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DXGetErrorDescription.inl">
-      <Filter>Dxerror</Filter>
+      <Filter>Dxerr</Filter>
     </None>
     <None Include="DXGetErrorString.inl">
-      <Filter>Dxerror</Filter>
+      <Filter>Dxerr</Filter>
     </None>
     <None Include="DXTrace.inl">
-      <Filter>Dxerror</Filter>
+      <Filter>Dxerr</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

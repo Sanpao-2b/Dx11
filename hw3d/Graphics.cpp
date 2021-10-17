@@ -1,10 +1,11 @@
 #include "Graphics.h"
 #include "dxerr.h"
 #include <sstream>
-
+#include <d3dcompiler.h>
 namespace wrl = Microsoft::WRL;
 
 #pragma comment(lib,"d3d11.lib")//用代码链接到这个库，比在项目属性里面的LINK中设置要灵活一些， 复制代码到别的项目 可以不用重新设置
+#pragma comment(lib,"D3DCompiler.lib")//用它可以在运行时编译着色器，但是现在我只需要用它的着色器加载函数即可
 
 //定义宏，让下面的抛出异常的代码更简洁
 //hrcall: 包裹一个函数，检查函数返值HRESULT是否代表失败 是则抛出异常
@@ -204,8 +205,23 @@ void Graphics::DrawTestTriangle()
 		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
 		);
 
+	// ————创建顶点着色器
+	wrl::ComPtr<ID3D11VertexShader> pVertexShader; //老套路 传它的pp填充
+	wrl::ComPtr<ID3DBlob> pBlob;
+	// 这个函数可以读取任何二进制文件，注意这个函数只能用wild string 所以前面价格L 进行转换
+	// !还有个大问题，这个函数加载文件的目录跟HLSL编译后输出的目录是不同的，懒得输入一大串目录，所以要改HLSL文件编译后的 执行文件输出目录,
+	// 把OutDir 改成ProjectDir即不要输出到外目录，输出到项目目录
+	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
+	// 创建真正的着色器 
+	// 形参：1.着色器的二进制文件的指针(void*类型的 不能用&pBlob 前面说过 会释放掉指向的内存) 2.二进制文件长度(读到哪里结束) 3.暂时不用以后再说 4.pp
+	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
+
+	// ————绑定着色器 
+	// 再次提醒，不要传入直接传入智能指针，要调用Get()才能获取到正确的 内部维护的那个指针
+	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
+
 	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
-	GFX_THROW_INFO_ONLY(pContext->Draw(3u, 0u));//形参：1.顶点数量 2.起始位置
+	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)sizeof(vertices), 0u));//形参：1.顶点数量 2.起始位置
 }
 
 
