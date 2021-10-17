@@ -21,7 +21,6 @@ public:
 	{
 	public:
 		//std::vector<std::string> infoMsgs = {} 用于接收传入构造函数的DxgiInfoManager类抓到的调试信息
-		//本应是DxgiInfoManager.h之后加入的， 我copy的时候不小心先搞进来了
 		HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs = {} ) noexcept;
 		const char* what() const noexcept override;  //显示错误消息的哦
 		
@@ -96,5 +95,4 @@ private:
 	COM对象是可以归多个Comptr去指向的，并且有引用计数，而unique_ptr必须独占
 	comptr还有很多好用的函数。
 	最重要的是&
-
 */

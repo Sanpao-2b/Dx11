@@ -188,7 +188,7 @@ void Graphics::DrawTestTriangle()
 	GFX_THROW_INFO(pDevice->CreateBuffer(&bd, &sd, &pVertexBuffer));
 	
 
-	// 将顶点缓冲区数组绑定到渲染管线的 输入装配器阶段
+	// 将顶点缓冲区数组绑定到渲染管线的 IA阶段
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
 	/*void IASetVertexBuffers(
@@ -205,21 +205,30 @@ void Graphics::DrawTestTriangle()
 		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
 		);
 
+
+
+	// ————创建像素着色器
+	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+	wrl::ComPtr<ID3DBlob> pBlob;
+	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pBlob)); //pBlob只是作为一个中间临时指针 下面这句话执行后 pBlob指向的东西就可以被释放了 没关系
+	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+	// 绑定像素着色器
+	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
+
 	// ————创建顶点着色器
 	wrl::ComPtr<ID3D11VertexShader> pVertexShader; //老套路 传它的pp填充
-	wrl::ComPtr<ID3DBlob> pBlob;
-	// 这个函数可以读取任何二进制文件，注意这个函数只能用wild string 所以前面价格L 进行转换
-	// !还有个大问题，这个函数加载文件的目录跟HLSL编译后输出的目录是不同的，懒得输入一大串目录，所以要改HLSL文件编译后的 执行文件输出目录,
-	// 把OutDir 改成ProjectDir即不要输出到外目录，输出到项目目录
+	/* 这个函数可以读取任何二进制文件，注意这个函数只能用wild string 所以前面价格L 进行转换
+	 !还有个大问题，这个函数加载文件的目录跟HLSL编译后输出的目录是不同的，懒得输入一大串目录，所以要改HLSL文件编译后的 执行文件输出目录,
+	 把OutDir 改成ProjectDir即不要输出到外目录，输出到项目目录*/
 	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-	// 形参：1.着色器的二进制文件的指针(void*类型的 不能用&pBlob 前面说过 会释放掉指向的内存) 2.二进制文件长度(读到哪里结束) 3.暂时不用以后再说 4.pp
+	// 形参：1.着色器的二进制文件的指针(void*类型的 此处不能用&pBlob 前面说过 会释放掉) 2.二进制文件长度(读到哪里结束) 3.暂时不用以后再说 4.pp
 	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
-	// ————绑定顶点着色器 
+	// 绑定顶点着色器 
 	/* 再次提醒，不要传入直接传入智能指针，要调用Get()才能获取到正确的 内部维护的那个指针*/
 	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
 
-	// ————Input(vertex) Layout(2d position only)
+	// ————创建Input Layout(vertex) (2d position only)
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 	// 描述符,下面这是描述符数组，即每个元素都是一个InputLayout的描述符 要看有啥成员要接受输入值可以自己创建一个变量 用.挨个赋值也行
 	/*
@@ -237,7 +246,7 @@ void Graphics::DrawTestTriangle()
 	{
 		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
-	//创建输入布局函数 见msdn 
+	//CreateInputLayout 见msdn 
 	/*
 		HRESULT CreateInputLayout(
 		  [in]  const D3D11_INPUT_ELEMENT_DESC  *pInputElementDescs,  //一组数据描述符
@@ -254,12 +263,10 @@ void Graphics::DrawTestTriangle()
 		&pInputLayout
 	));
 
-	// ————创建像素着色器
-	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pBlob)); //重用pBlob因为原来指向的空间不需要了 可以释放掉 没问题
-	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
-	// ————绑定像素着色器
-	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
+	// bind vertex layout 绑定到渲染管线
+	/*重要的事情说多遍：智能指针获取内部维护的指针的地址用.GetAddressOf(),获得该指针本身用.Get()*/
+	pContext->IASetInputLayout(pInputLayout.Get());
+
 
 	// ————绑定渲染目标 Render Target 
 	/*如果不绑定这个东西 那D3D不知道像素着色器应该输出到哪里去 OM Oput Merge 阶段
@@ -290,7 +297,7 @@ void Graphics::DrawTestTriangle()
 
 
 	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
-	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)sizeof(vertices), 0u));//形参：1.顶点数量 2.起始位置
+	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)std::size(vertices), 0u));//形参：1.顶点数量 2.起始位置
 }
 
 
