@@ -156,6 +156,7 @@ void Graphics::DrawTestTriangle()
 		float x;
 		float y;
 	};
+
 	// 存放3个点,注意必须顺时针，D3D用顺时针和逆时针区分正反面，反面是不显示的
 	const Vertex vertices[] =
 	{
@@ -186,18 +187,17 @@ void Graphics::DrawTestTriangle()
 	// 因为IASetVertexBuffers() 需要传入ID3D11Buffer数组 所以创建
 	GFX_THROW_INFO(pDevice->CreateBuffer(&bd, &sd, &pVertexBuffer));
 	
-	/*
-	void IASetVertexBuffers(
-	[in]           UINT         StartSlot,    用于绑定的第一个输入槽，数组额外的缓冲区会被隐式绑定到后面的输入草
-	[in]           UINT         NumBuffers,	  数组中的顶点缓存的数量
-	[in, optional] ID3D11Buffer * const *ppVertexBuffers, 指向顶点缓冲区数组的指针
-	[in, optional] const UINT   *pStrides,	    步幅值，就是一个顶点数据的大小，单位是字节byte
-	[in, optional] const UINT   *pOffsets		偏移量，！注意顶点缓存不只是装顶点数据 还有颜色、法线，这里我们只有顶点数据则偏移0
-	);
-	*/
+
 	// 将顶点缓冲区数组绑定到渲染管线的 输入装配器阶段
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
+	/*void IASetVertexBuffers(
+		[in]           UINT         StartSlot,    用于绑定的第一个输入槽，数组额外的缓冲区会被隐式绑定到后面的输入草
+		[in]           UINT         NumBuffers,	  数组中的顶点缓存的数量
+		[in, optional] ID3D11Buffer * const *ppVertexBuffers, 指向顶点缓冲区数组的指针
+		[in, optional] const UINT   *pStrides,	    步幅值，就是一个顶点数据的大小，单位是字节byte
+		[in, optional] const UINT   *pOffsets		偏移量，！注意顶点缓存不只是装顶点数据 还有颜色、法线，这里我们只有顶点数据则偏移0
+	);*/
 	pContext->IASetVertexBuffers(
 		0,1u,
 		pVertexBuffer.GetAddressOf(), //这里出错了 他需要一个pp 但不是用于填充，它内部是取出pp指向的对象，所以不能直接取地址 这样会释放掉被指向的缓存
@@ -216,8 +216,43 @@ void Graphics::DrawTestTriangle()
 	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
 	// ————绑定顶点着色器 
-	// 再次提醒，不要传入直接传入智能指针，要调用Get()才能获取到正确的 内部维护的那个指针
+	/* 再次提醒，不要传入直接传入智能指针，要调用Get()才能获取到正确的 内部维护的那个指针*/
 	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
+
+	// ————Input(vertex) Layout(2d position only)
+	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+	// 描述符,下面这是描述符数组，即每个元素都是一个InputLayout的描述符 要看有啥成员要接受输入值可以自己创建一个变量 用.挨个赋值也行
+	/*
+		typedef struct D3D11_INPUT_ELEMENT_DESC {
+		  LPCSTR                     SemanticName;			//**语义名，必须跟VertexShader中形参:后的名称相同
+		  UINT                       SemanticIndex;			//**索引号，因为shader中可能有很多语义参数，所以会有0 1 2....索引
+		  DXGI_FORMAT                Format;				//**重要，告诉我们输入的数据是什么，如下面宏即 2个float元素 R32G32可以不指颜色，可以指点。看MSDN DXGI_FORMAT
+		  UINT                       InputSlot;				//总是0
+		  UINT                       AlignedByteOffset;		//某种数据的第一个字节位 相比于那组数据的第一个字节位的偏移量
+		  D3D11_INPUT_CLASSIFICATION InputSlotClass;        //后面这俩是用于渲染实例对象，即一组数据渲染很多个实例 看MSDN D3D11_INPUT_CLASSIFICATION
+		  UINT                       InstanceDataStepRate;
+		} D3D11_INPUT_ELEMENT_DESC;
+	*/
+	const D3D11_INPUT_ELEMENT_DESC ied[] =
+	{
+		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+	};
+	//创建输入布局函数 见msdn 
+	/*
+		HRESULT CreateInputLayout(
+		  [in]  const D3D11_INPUT_ELEMENT_DESC  *pInputElementDescs,  //一组数据描述符
+		  [in]  UINT               NumElements,						  //输入的数组中描述符的数量
+		  [in]  const void         *pShaderBytecodeWithInputSignature,//指向已编译过的shader的指针，指向字节码 我们已经绑定了shader啊？ 这里作用是检查描述符和着色器是不是匹配的
+		  [in]  SIZE_T             BytecodeLength,					  //字节码长度
+		  [out] ID3D11InputLayout  **ppInputLayout					  //pp，填充我们滴InputLayout对象
+		);
+	*/
+	GFX_THROW_INFO(pDevice->CreateInputLayout(
+		ied, (UINT)std::size(ied),
+		pBlob->GetBufferPointer(),
+		pBlob->GetBufferSize(),
+		&pInputLayout
+	));
 
 	// ————创建像素着色器
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
@@ -225,23 +260,24 @@ void Graphics::DrawTestTriangle()
 	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
 	// ————绑定像素着色器
 	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
-	/*
-		到此运行后，会报错：需要绑定一个渲染目标视图
-		我们不是直接把结果渲染到后缓存上么，为什么需要渲染目标视图这个东西？？？？？
-		因为D3D允许我们渲染到off-screen-Target上，所以我们可以在一个目标上渲染多个passes 
-		说人话：
-			我们可以渲染多个Texture，然后通过组合/混合等方式 把他们都搞到同一个后缓存上。这就是"后处理"这块的知识了，
-	*/
 
-	// ————绑定渲染目标 Render Target 如果不绑定这个东西 那D3D不知道像素着色器应该输出到哪里去 OM Oput Merge 阶段
-	// 加了s 复数 则肯定需要一个数组的指针了 长得像pp,我们已经创建过 渲染目标了pTarget 当做只有一个元素的数组即可,
-	//	！！！！注意不能&pTarget,这样会释放掉指向的对象,用GetAddressOf()来获取内部那个指针的地址 pp。
-	// 没用到深度缓存 nullptr即可
+	// ————绑定渲染目标 Render Target 
+	/*如果不绑定这个东西 那D3D不知道像素着色器应该输出到哪里去 OM Oput Merge 阶段
+	 加了s 复数 则肯定需要一个数组的指针了 长得像pp,我们已经创建过 渲染目标了pTarget 当做只有一个元素的数组即可,
+		！！！！注意不能&pTarget,这样会释放掉指向的对象,用GetAddressOf()来获取内部那个指针的地址 pp。
+	 没用到深度缓存 nullptr即可*/
 	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+	
+	// ————Primitive Topology 原始拓扑
+	/* 描述IA阶段传入的点之间的拓扑关系，即确定图元  
+	 比如输入0 1 2 3 4 5 点。线：01 23 45三条线。 三角形：012 345。 三角形带:012 123 234 345 */
+	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// ————配置视口Viewport
-	// 因为把buffer上的东西映射到屏幕可以有很多方法，比如映射过去只占屏幕的左上角一块区域， 这样屏幕的其他区域可以用别的buffer去映射，从而实现分屏 或者是映射HUD
-	// 不需要绑定到渲染管线，只需要创建一个结构体，然后用函数指定它即可
+
+
+	// ————配置视口 Viewport
+	/* 因为把buffer上的东西映射到屏幕可以有很多方法，比如映射过去只占屏幕的左上角一块区域， 这样屏幕的其他区域可以用别的buffer去映射，从而实现分屏 或者是映射HUD
+	 不需要绑定到渲染管线，只需要创建一个结构体，然后用函数指定它即可*/
 	D3D11_VIEWPORT vp;
 	vp.Width = 800;
 	vp.Height = 600;
@@ -251,6 +287,8 @@ void Graphics::DrawTestTriangle()
 	vp.TopLeftY = 0;
 	// RS——Rasterize Stage  注意有s 说明需要一个数组，我们用取地址指向这个地址，就像是一个只有一个元素的数组
 	pContext->RSSetViewports(1u, &vp);
+
+
 	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
 	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)sizeof(vertices), 0u));//形参：1.顶点数量 2.起始位置
 }
