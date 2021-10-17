@@ -212,13 +212,26 @@ void Graphics::DrawTestTriangle()
 	// !还有个大问题，这个函数加载文件的目录跟HLSL编译后输出的目录是不同的，懒得输入一大串目录，所以要改HLSL文件编译后的 执行文件输出目录,
 	// 把OutDir 改成ProjectDir即不要输出到外目录，输出到项目目录
 	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-	// 创建真正的着色器 
 	// 形参：1.着色器的二进制文件的指针(void*类型的 不能用&pBlob 前面说过 会释放掉指向的内存) 2.二进制文件长度(读到哪里结束) 3.暂时不用以后再说 4.pp
 	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
-	// ————绑定着色器 
+	// ————绑定顶点着色器 
 	// 再次提醒，不要传入直接传入智能指针，要调用Get()才能获取到正确的 内部维护的那个指针
 	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
+
+	// ————创建像素着色器
+	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pBlob)); //重用pBlob因为原来指向的空间不需要了 可以释放掉 没问题
+	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+	// ————绑定像素着色器
+	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
+	/*
+		到此运行后，会报错：需要绑定一个渲染目标视图
+		我们不是直接把结果渲染到后缓存上么，为什么需要渲染目标视图这个东西？？？？？
+		因为D3D允许我们渲染到off-screen-Target上，所以我们可以在一个目标上渲染多个passes 
+		说人话：
+			我们可以渲染多个Texture，然后通过组合/混合等方式 把他们都搞到同一个后缓存上。这就是"后处理"这块的知识了，
+	*/
 
 	//绘制三角形的函数,只有在真正渲染命令时才会有输出错误的信息，所以包裹这个即可
 	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)sizeof(vertices), 0u));//形参：1.顶点数量 2.起始位置
