@@ -173,18 +173,9 @@ void Graphics::DrawTestTriangle()
 		{0.0f, 0.5f, 255, 0, 0, 0},
 		{0.5f, -0.5f, 0, 255, 0, 0},
 		{-0.5f, -0.5f, 0, 0, 255, 0},
-
-		{0.0f, 0.5f, 255, 0, 0, 0},
-		{-0.5f, -0.5f, 0, 0, 255, 0},
 		{-0.3f, 0.3f, 0, 255, 0, 0},
-
-		{0.0f, 0.5f, 255, 0, 0, 0},
 		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.5f, -0.5f, 0, 255, 0, 0},
-
 		{0.0f, -0.8f, 255, 0, 0, 0},
-		{-0.5f, -0.5f, 0, 0, 255, 0},
-		{0.5f, -0.5f, 0, 255, 0, 0},
 	};
 
 	//测试我们的顶点结构体
@@ -195,23 +186,45 @@ void Graphics::DrawTestTriangle()
 
 	// 需要缓冲区数组描述符
 	D3D11_BUFFER_DESC bd = {};
-	bd.ByteWidth = sizeof(vertices);			//UINT			缓冲区的大小(以字节为单位)
-	bd.Usage = D3D11_USAGE_DEFAULT;				//D3D11_USAGE	确定预期如何读取和写入缓冲区,通常是 D3D11_USAGE_DEFAULT GPU可读写
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;	//UINT			表示这缓存将要成为什么样的缓存，顶点缓存、索引缓存、常量缓存等等 
-	bd.CPUAccessFlags = 0u;						//UINT			CPU访问标志  是否允许CPU访问 0的不许
-	bd.MiscFlags = 0u;							//UINT			杂项标志 或 0(如果未使用)。
-	bd.StructureByteStride = sizeof(Vertex);	//UNIT			每个顶点的大小
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;	
+	bd.Usage = D3D11_USAGE_DEFAULT;				
+	bd.CPUAccessFlags = 0u;						
+	bd.MiscFlags = 0u;							
+	bd.ByteWidth = sizeof(vertices);		
+	bd.StructureByteStride = sizeof(Vertex);
 	
 	GFX_THROW_INFO(pDevice->CreateBuffer(&bd, &sd, &pVertexBuffer));
-	// ————绑定顶点缓冲区
+	
+	// ————绑定顶点缓冲区Vertex Buffer
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
 	pContext->IASetVertexBuffers(
 		0,1u,
-		pVertexBuffer.GetAddressOf(), //这里出错了 他需要一个pp 但不是用于填充，它内部是取出pp指向的对象，所以不能直接取地址 这样会释放掉被指向的缓存
+		pVertexBuffer.GetAddressOf(),
 		&stride,		//步幅 每组数据的大小
 		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
 		);
+	// —————create index buffer
+	const unsigned short indices[] = //索引默认是16位
+	{
+		0,1,2,
+		0,2,3,
+		0,4,1,
+		2,1,5,
+	};
+	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
+	D3D11_BUFFER_DESC ibd = {};
+	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	ibd.Usage = D3D11_USAGE_DEFAULT;
+	ibd.CPUAccessFlags = 0u;
+	ibd.MiscFlags = 0u;
+	ibd.ByteWidth = sizeof(indices);
+	ibd.StructureByteStride = sizeof(unsigned short);
+	D3D11_SUBRESOURCE_DATA isd = {};
+	isd.pSysMem = indices;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&ibd, &isd, &pIndexBuffer));
+	// ————bind index buffer
+	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
 
 	// ————创建像素着色器
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
@@ -265,7 +278,8 @@ void Graphics::DrawTestTriangle()
 	pContext->RSSetViewports(1u, &vp);
 
 	// ————绘制三角形的函数
-	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)std::size(vertices), 0u));//形参：1.顶点数量 2.起始位置
+	// 传入索引进行绘制,起始索引点0，起始顶点0
+	GFX_THROW_INFO_ONLY(pContext->DrawIndexed((UINT)std::size(indices), 0u,0u));
 }
 
 
