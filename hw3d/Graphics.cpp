@@ -154,17 +154,18 @@ void Graphics::DrawTestTriangle()
 	{
 		float x;
 		float y;
-		float r;
-		float g;
-		float b;
+		unsigned char r; //1B
+		unsigned char g;
+		unsigned char b;
+		unsigned char a;
 	};
 	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
 	const Vertex vertices[] =
 	{
 		//后三位是颜色
-		{0.0f, 0.5f, 1.0f, 0.0f, 0.0f},
-		{0.5f, -0.5f, 0.0f, 1.0f, 0.0f},
-		{-0.5f, -0.5f, 0.0f, 0.0f, 1.0f},
+		{0.0f, 0.5f, 255, 0, 0, 0},
+		{0.5f, -0.5f, 0, 255, 0, 0},
+		{-0.5f, -0.5f, 0, 0, 255, 0},
 	};
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices;//指向初始化数据
@@ -212,7 +213,7 @@ void Graphics::DrawTestTriangle()
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
 		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"Color", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0},//偏移量8，因为一个目前顶点长这样{x,y,r,g,b} 顶点2D坐标占8个字节 偏移8字节后才是颜色
+		{"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0},//数据格式后缀UNORM 会把你输入的数据强制转换成 该后缀指定的类型 颜色这里 我们要UNORM 即卡死在0~1
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
 		ied, (UINT)std::size(ied),
