@@ -154,14 +154,17 @@ void Graphics::DrawTestTriangle()
 	{
 		float x;
 		float y;
+		float r;
+		float g;
+		float b;
 	};
 	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
 	const Vertex vertices[] =
 	{
-		{0.0f, 0.5f},
-		{0.5f, -0.5f},
-		{-0.5f, -0.5f},
-		{0.0f, 0.5f},
+		//后三位是颜色
+		{0.0f, 0.5f, 1.0f, 0.0f, 0.0f},
+		{0.5f, -0.5f, 0.0f, 1.0f, 0.0f},
+		{-0.5f, -0.5f, 0.0f, 0.0f, 1.0f},
 	};
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices;//指向初始化数据
@@ -209,6 +212,7 @@ void Graphics::DrawTestTriangle()
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
 		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"Color", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0},//偏移量8，因为一个目前顶点长这样{x,y,r,g,b} 顶点2D坐标占8个字节 偏移8字节后才是颜色
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
 		ied, (UINT)std::size(ied),
@@ -223,7 +227,7 @@ void Graphics::DrawTestTriangle()
 	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
 	
 	// ————绑定Primitive Topology 原始拓扑
-	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);  
+	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);  
 
 	// ————配置视口 Viewport
 	D3D11_VIEWPORT vp;
