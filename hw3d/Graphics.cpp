@@ -162,7 +162,10 @@ void Graphics::DrawTestTriangle()
 	{
 		{0.0f, 0.5f},
 		{0.5f, -0.5f},
+		{0.5f, -0.5f},
 		{-0.5f, -0.5f},
+		{-0.5f, -0.5f},
+		{0.0f, 0.5f},
 	};
 	/*
 	typedef struct D3D11_SUBRESOURCE_DATA
@@ -278,7 +281,7 @@ void Graphics::DrawTestTriangle()
 	// ————Primitive Topology 原始拓扑
 	/* 描述IA阶段传入的点之间的拓扑关系，即确定图元  
 	 比如输入0 1 2 3 4 5 点。线：01 23 45三条线。 三角形：012 345。 三角形带:012 123 234 345 */
-	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST); //更改这里拓扑结构为直线 由于只有三个点 前两个点构成一个直线，第三个点没用上
+	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST); 
 
 
 
