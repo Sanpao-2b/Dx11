@@ -175,7 +175,7 @@ void Graphics::DrawTestTriangle()
 		{-0.5f, -0.5f, 0, 0, 255, 0},
 		{-0.3f, 0.3f, 0, 255, 0, 0},
 		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -0.8f, 255, 0, 0, 0},
+		{0.0f, -1.8f, 255, 0, 0, 0},
 	};
 
 	//测试我们的顶点结构体
@@ -268,12 +268,12 @@ void Graphics::DrawTestTriangle()
 
 	// ————配置视口 Viewport
 	D3D11_VIEWPORT vp;
-	vp.Width = 800;
-	vp.Height = 600;
+	vp.Width = 400;
+	vp.Height = 300;
 	vp.MinDepth = 0;
 	vp.MaxDepth = 1;
-	vp.TopLeftX = 0; //左上角的位置
-	vp.TopLeftY = 0;
+	vp.TopLeftX = 100; //左上角的位置
+	vp.TopLeftY = 100;
 	// RS——Rasterize Stage  注意有s 说明需要一个数组，我们用取地址指向这个地址，就像是一个只有一个元素的数组
 	pContext->RSSetViewports(1u, &vp);
 
