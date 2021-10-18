@@ -150,23 +150,35 @@ void Graphics::DrawTestTriangle()
 	// 创建一个指针当pp
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
 	// 需要传入子资源数据 即缓冲区具体存放的什么玩意儿。
+	// 修改了顶点的数据结构体，为啥不用修改InputLayout？ 因为虽然修改了但是顺序没变，依然是2个float 4个字符
 	struct Vertex
 	{
-		float x;
-		float y;
-		unsigned char r; //1B
-		unsigned char g;
-		unsigned char b;
-		unsigned char a;
+		struct  
+		{
+			float x;
+			float y;
+		}pos;
+		struct
+		{
+			unsigned char r; //1B
+			unsigned char g;
+			unsigned char b;
+			unsigned char a;
+		}color;
+
 	};
 	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
-	const Vertex vertices[] =
+	Vertex vertices[] =
 	{
 		//后三位是颜色
 		{0.0f, 0.5f, 255, 0, 0, 0},
 		{0.5f, -0.5f, 0, 255, 0, 0},
 		{-0.5f, -0.5f, 0, 0, 255, 0},
 	};
+
+	//测试我们的顶点结构体
+	vertices[0].color.g = 255;
+
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices;//指向初始化数据
 
