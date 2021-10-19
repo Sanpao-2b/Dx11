@@ -175,7 +175,7 @@ void Graphics::DrawTestTriangle( float angle)
 		{-0.5f, -0.5f, 0, 0, 255, 0},
 		{-0.3f, 0.3f, 0, 255, 0, 0},
 		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -0.8f, 255, 0, 0, 0}, //这里改成-1 让最下面的顶点触底，发现现象是 800*600的窗口，这个点在旋转时都能触底，所以图形被拉伸了 想办法让他不拉伸怎么办？ X轴方向的变换矩阵*3/4
+		{0.0f, -1.0f, 255, 0, 0, 0}, //这里改成-1 让最下面的顶点触底，发现现象是 800*600的窗口，这个点在旋转时都能触底，所以图形被拉伸了 想办法让他不拉伸怎么办？ X轴方向的变换矩阵*3/4
 	};
 
 	D3D11_SUBRESOURCE_DATA sd = {};
@@ -234,11 +234,12 @@ void Graphics::DrawTestTriangle( float angle)
 	};
 	const ConstantBuffer cb =
 	{
+		//实际上因为在vertex shader中 行向量在左边，矩阵是右乘的 因此 矩阵需要变一下(转置)
 		{
-			 std::cos(angle), std::sin(angle), 0.0f, 0.0f,
-			-std::sin(angle), std::cos(angle), 0.0f, 0.0f,
-			0.0f,             0.0f,            1.0f, 0.0f,
-			0.0f,             0.0f,            0.0f, 1.0f,
+			(3.0f / 4.0f) * std::cos(angle),(3.0f / 4.0f) *-std::sin(angle), 0.0f, 0.0f,
+			std::sin(angle),                 std::cos(angle),                0.0f, 0.0f,
+			0.0f,							 0.0f,							 1.0f, 0.0f,
+			0.0f,							 0.0f,							 0.0f, 1.0f,
 		}
 	};
 	
