@@ -7,6 +7,7 @@
 //c++17 可以选择返回一个int还是一个空的optional 配合消息处理很好 optional<T> 相当于T类型变量和一个bool值的打包，其中的bool用来表示T变量是否为空
 #include <optional> 
 #include <memory> //智能指针
+#include "WindowsThrowMacros.h"
 class Window
 {
 public:
@@ -80,7 +81,3 @@ private:
 	std::unique_ptr<Graphics> pGfx; //私有属性 需要提供函数访问 不要直接像键盘和鼠标一样搞个变量， 因为hWnd拿不到 我们要先弄个空指针，然后在窗口默认构造中去传入hWnd
 };
 
-
-#define CHWND_EXCEPT(hr) Window::HrException(__LINE__,__FILE__,hr)
-#define CHWND_LAST_EXCEPT() Window::HrException(__LINE__,__FILE__,GetLastError())
-#define CHWND_NOGFX_EXCEPT() Window::NoGfxException(__LINE__,__FILE__)
