@@ -76,7 +76,7 @@ public:
 	*/
 	void ClearBuffer(float red, float green, float blue) noexcept;
 	//绘制三角形
-	void DrawTestTriangle();
+	void DrawTestTriangle(float angle);
 private:
 #ifndef NDEBUG    //ifndef 是 if no def  没有定义 不是DEBUG 相当于是DEBUG- - 好你妈拗口
 	DxgiInfoManager infoManager;

@@ -27,9 +27,9 @@ void App::DoFrame()
 {
 	const float c = sin(timer.Peek()) / 2.0f + 0.5f; //time.peek()是从程序运行到现在的时间，c是个0~1变化的数 这也是颜色变化的范围
 	wnd.Gfx().ClearBuffer(c, c, 1.0f);				 //红绿色是变化的数字
-	wnd.Gfx().DrawTestTriangle();
+	wnd.Gfx().DrawTestTriangle(timer.Peek());
 	wnd.Gfx().EndFrame(); //Gfx()返回的是指向Graphics对象的指针,调用图形类中的函数
-}
+} 
 
 
 

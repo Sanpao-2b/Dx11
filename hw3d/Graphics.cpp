@@ -139,7 +139,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void Graphics::DrawTestTriangle()
+void Graphics::DrawTestTriangle( float angle)
 {
 	HRESULT hr;
 
@@ -175,11 +175,8 @@ void Graphics::DrawTestTriangle()
 		{-0.5f, -0.5f, 0, 0, 255, 0},
 		{-0.3f, 0.3f, 0, 255, 0, 0},
 		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -0.8f, 255, 0, 0, 0},
+		{0.0f, -0.8f, 255, 0, 0, 0}, //这里改成-1 让最下面的顶点触底，发现现象是 800*600的窗口，这个点在旋转时都能触底，所以图形被拉伸了 想办法让他不拉伸怎么办？ X轴方向的变换矩阵*3/4
 	};
-
-	//测试我们的顶点结构体
-	vertices[0].color.g = 255;
 
 	D3D11_SUBRESOURCE_DATA sd = {};
 	sd.pSysMem = vertices;//指向初始化数据
@@ -220,11 +217,45 @@ void Graphics::DrawTestTriangle()
 	ibd.MiscFlags = 0u;
 	ibd.ByteWidth = sizeof(indices);
 	ibd.StructureByteStride = sizeof(unsigned short);
+	
 	D3D11_SUBRESOURCE_DATA isd = {};
 	isd.pSysMem = indices;
 	GFX_THROW_INFO(pDevice->CreateBuffer(&ibd, &isd, &pIndexBuffer));
 	// ————bind index buffer
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
+
+	// ————create constant buffer for transformation matrix
+	struct ConstantBuffer 
+	{
+		struct  
+		{
+			float element[4][4];
+		}transformation;
+	};
+	const ConstantBuffer cb =
+	{
+		{
+			 std::cos(angle), std::sin(angle), 0.0f, 0.0f,
+			-std::sin(angle), std::cos(angle), 0.0f, 0.0f,
+			0.0f,             0.0f,            1.0f, 0.0f,
+			0.0f,             0.0f,            0.0f, 1.0f,
+		}
+	};
+	
+	wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
+	D3D11_BUFFER_DESC cbd;
+	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbd.Usage = D3D11_USAGE_DYNAMIC;			//常数缓存的用法基本都是动态的 每帧更新
+	cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;//CPU写权限
+	cbd.MiscFlags = 0u;
+	cbd.ByteWidth = sizeof(cb);
+	cbd.StructureByteStride = 0u;     //为0即可 不必深究
+	
+	D3D11_SUBRESOURCE_DATA csd = {};
+	csd.pSysMem = &cb;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&cbd, &csd, &pConstantBuffer));
+	// ————bind constant buffer to vertex shader 直接绑定相应着色器
+	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
 
 	// ————创建像素着色器
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
