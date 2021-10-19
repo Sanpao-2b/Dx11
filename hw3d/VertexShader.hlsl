@@ -18,7 +18,7 @@ struct VSOut
 // 没赋值为啥就能用，猜测：我们在绘制函数里 把常数缓存绑定到顶点着色器了，所以可能这里的transform可以直接自动赋值？？？
 cbuffer cBuf
 {
-	matrix transform;
+	row_major matrix transform;
 };
 
 //我们定义的颜色是4个参数RGBA ，这里只拿3个 忽略第四个是可以的

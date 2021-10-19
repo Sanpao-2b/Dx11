@@ -234,12 +234,12 @@ void Graphics::DrawTestTriangle( float angle)
 	};
 	const ConstantBuffer cb =
 	{
-		//实际上因为在vertex shader中 行向量在左边，矩阵是右乘的 因此 矩阵需要变一下(转置)
+		//也可以在Vertex shader中 告诉HLSL矩阵是按行排列的，好处就是 跟左乘的矩阵一模一样 只是在shader中，放在右边 仅此而已
 		{
-			(3.0f / 4.0f) * std::cos(angle),(3.0f / 4.0f) *-std::sin(angle), 0.0f, 0.0f,
-			std::sin(angle),                 std::cos(angle),                0.0f, 0.0f,
-			0.0f,							 0.0f,							 1.0f, 0.0f,
-			0.0f,							 0.0f,							 0.0f, 1.0f,
+			 (3.0f / 4.0f) *std::cos(angle), std::sin(angle), 0.0f, 0.0f,
+			 (3.0f / 4.0f) *-std::sin(angle), std::cos(angle), 0.0f, 0.0f,
+			 0.0f,			  0.0f,			   1.0f, 0.0f,
+			 0.0f,			  0.0f,			   0.0f, 1.0f,
 		}
 	};
 	
