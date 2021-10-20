@@ -2,7 +2,11 @@
 #include "dxerr.h"
 #include <sstream>
 #include <d3dcompiler.h>
+#include <cmath>
+#include <DirectXMath.h> //矩阵
+
 namespace wrl = Microsoft::WRL;
+namespace dx = DirectX;
 
 #pragma comment(lib,"d3d11.lib")//用代码链接到这个库，比在项目属性里面的LINK中设置要灵活一些， 复制代码到别的项目 可以不用重新设置
 #pragma comment(lib,"D3DCompiler.lib")//用它可以在运行时编译着色器，但是现在我只需要用它的着色器加载函数即可
@@ -225,21 +229,19 @@ void Graphics::DrawTestTriangle( float angle)
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
 
 	// ————create constant buffer for transformation matrix
+
 	struct ConstantBuffer 
 	{
-		struct  
-		{
-			float element[4][4];
-		}transformation;
+		dx::XMMATRIX transform; //4*4 float 不能直接访问其中单个值 只能通过接口
 	};
 	const ConstantBuffer cb =
 	{
-		//也可以在Vertex shader中 告诉HLSL矩阵是按行排列的，好处就是 跟左乘的矩阵一模一样 只是在shader中，放在右边 仅此而已
 		{
-			 (3.0f / 4.0f) *std::cos(angle), std::sin(angle), 0.0f, 0.0f,
-			 (3.0f / 4.0f) *-std::sin(angle), std::cos(angle), 0.0f, 0.0f,
-			 0.0f,			  0.0f,			   1.0f, 0.0f,
-			 0.0f,			  0.0f,			   0.0f, 1.0f,
+			//直接用dx::XMMatrixRotationZ(angle) * dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) 也是可以的
+			dx::XMMatrixMultiply(
+				dx::XMMatrixRotationZ(angle),
+				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f)
+			)
 		}
 	};
 	
