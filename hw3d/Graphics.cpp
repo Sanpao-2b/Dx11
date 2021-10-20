@@ -122,181 +122,20 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void Graphics::DrawTestTriangle( float angle)
+void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)
 {
-	HRESULT hr;
-
-	// Input Assembler输入装配器阶段
-	namespace wrl = Microsoft::WRL;
-	
-	// ————创建顶点缓冲区
-	// 创建一个指针当pp
-	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
-	// 需要传入子资源数据 即缓冲区具体存放的什么玩意儿。
-	// 修改了顶点的数据结构体，为啥不用修改InputLayout？ 因为虽然修改了但是顺序没变，依然是2个float 4个字符
-	struct Vertex
-	{
-		struct  
-		{
-			float x;
-			float y;
-		}pos;
-		struct
-		{
-			unsigned char r; //1B
-			unsigned char g;
-			unsigned char b;
-			unsigned char a;
-		}color;
-
-	};
-	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
-	Vertex vertices[] =
-	{
-		{0.0f, 0.5f, 255, 0, 0, 0},
-		{0.5f, -0.5f, 0, 255, 0, 0},
-		{-0.5f, -0.5f, 0, 0, 255, 0},
-		{-0.3f, 0.3f, 0, 255, 0, 0},
-		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -1.0f, 255, 0, 0, 0}, //这里改成-1 让最下面的顶点触底，发现现象是 800*600的窗口，这个点在旋转时都能触底，所以图形被拉伸了 想办法让他不拉伸怎么办？ X轴方向的变换矩阵*3/4
-	};
-
-	D3D11_SUBRESOURCE_DATA sd = {};
-	sd.pSysMem = vertices;//指向初始化数据
-
-	// 需要缓冲区数组描述符
-	D3D11_BUFFER_DESC bd = {};
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;	
-	bd.Usage = D3D11_USAGE_DEFAULT;				
-	bd.CPUAccessFlags = 0u;						
-	bd.MiscFlags = 0u;							
-	bd.ByteWidth = sizeof(vertices);		
-	bd.StructureByteStride = sizeof(Vertex);
-	
-	GFX_THROW_INFO(pDevice->CreateBuffer(&bd, &sd, &pVertexBuffer));
-	
-	// ————绑定顶点缓冲区Vertex Buffer
-	const UINT stride = sizeof(Vertex);
-	const UINT offset = 0u;
-	pContext->IASetVertexBuffers(
-		0,1u,
-		pVertexBuffer.GetAddressOf(),
-		&stride,		//步幅 每组数据的大小
-		&offset			//偏移量某种数据在一组数据里的起始位置，每个数组元素目前只有一种数据：顶点 所以不用偏移
-		);
-	// —————create index buffer
-	const unsigned short indices[] = //索引默认是16位
-	{
-		0,1,2,
-		0,2,3,
-		0,4,1,
-		2,1,5,
-	};
-	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
-	D3D11_BUFFER_DESC ibd = {};
-	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	ibd.Usage = D3D11_USAGE_DEFAULT;
-	ibd.CPUAccessFlags = 0u;
-	ibd.MiscFlags = 0u;
-	ibd.ByteWidth = sizeof(indices);
-	ibd.StructureByteStride = sizeof(unsigned short);
-	
-	D3D11_SUBRESOURCE_DATA isd = {};
-	isd.pSysMem = indices;
-	GFX_THROW_INFO(pDevice->CreateBuffer(&ibd, &isd, &pIndexBuffer));
-	// ————bind index buffer
-	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
-
-	// ————create constant buffer for transformation matrix
-	struct ConstantBuffer 
-	{
-		struct  
-		{
-			float element[4][4];
-		}transformation;
-	};
-	const ConstantBuffer cb =
-	{
-		//也可以在Vertex shader中 告诉HLSL矩阵是按行排列的，好处就是 跟左乘的矩阵一模一样 只是在shader中，放在右边 仅此而已
-		{
-			 (3.0f / 4.0f) *std::cos(angle), std::sin(angle), 0.0f, 0.0f,
-			 (3.0f / 4.0f) *-std::sin(angle), std::cos(angle), 0.0f, 0.0f,
-			 0.0f,			  0.0f,			   1.0f, 0.0f,
-			 0.0f,			  0.0f,			   0.0f, 1.0f,
-		}
-	};
-	
-	wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
-	D3D11_BUFFER_DESC cbd;
-	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbd.Usage = D3D11_USAGE_DYNAMIC;			//常数缓存的用法基本都是动态的 每帧更新
-	cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;//CPU写权限
-	cbd.MiscFlags = 0u;
-	cbd.ByteWidth = sizeof(cb);
-	cbd.StructureByteStride = 0u;     //为0即可 不必深究
-	
-	D3D11_SUBRESOURCE_DATA csd = {};
-	csd.pSysMem = &cb;
-	GFX_THROW_INFO(pDevice->CreateBuffer(&cbd, &csd, &pConstantBuffer));
-	// ————bind constant buffer to vertex shader 直接绑定相应着色器
-	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
-
-	// ————创建像素着色器
-	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-	wrl::ComPtr<ID3DBlob> pBlob;
-	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pBlob)); //pBlob只是作为一个中间临时指针 下面这句话执行后 pBlob指向的东西就可以被释放了 没关系
-	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
-	// ————绑定像素着色器
-	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
-
-	// ————创建VertexShader
-	wrl::ComPtr<ID3D11VertexShader> pVertexShader; //老套路 传它的pp填充
-	// 这个函数可以读取任何二进制文件，注意这个函数只能用wild string 所以前面价格L 进行转换
-	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-	// 形参：1.着色器的二进制文件的指针(void*类型的 此处不能用&pBlob 前面说过 会释放掉) 2.二进制文件长度(读到哪里结束) 3.暂时不用以后再说 4.pp
-	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
-	// ————绑定顶点着色器 
-	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
-
-	// ————创建Input Layout
-	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
-	// 描述符,下面这是描述符数组
-	const D3D11_INPUT_ELEMENT_DESC ied[] =
-	{
-		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0},//数据格式后缀UNORM 会把你输入的数据强制转换成 该后缀指定的类型 颜色这里 我们要UNORM 即卡死在0~1
-	};
-	GFX_THROW_INFO(pDevice->CreateInputLayout(
-		ied, (UINT)std::size(ied),
-		pBlob->GetBufferPointer(),
-		pBlob->GetBufferSize(),
-		&pInputLayout
-	));
-	// ————bind Inputlayout 绑定到渲染管线
-	pContext->IASetInputLayout(pInputLayout.Get());
-
-	// ————绑定渲染目标 Render Target 
-	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
-	
-	// ————绑定Primitive Topology 原始拓扑
-	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);  
-
-	// ————配置视口 Viewport
-	D3D11_VIEWPORT vp;
-	vp.Width = 800;
-	vp.Height = 600;
-	vp.MinDepth = 0;
-	vp.MaxDepth = 1;
-	vp.TopLeftX = 0; //左上角的位置
-	vp.TopLeftY = 0;
-	// RS——Rasterize Stage  注意有s 说明需要一个数组，我们用取地址指向这个地址，就像是一个只有一个元素的数组
-	pContext->RSSetViewports(1u, &vp);
-
-	// ————绘制三角形的函数
-	// 传入索引进行绘制,起始索引点0，起始顶点0
-	GFX_THROW_INFO_ONLY(pContext->DrawIndexed((UINT)std::size(indices), 0u,0u));
+	GFX_THROW_INFO_ONLY(pContext->DrawIndexed(count, 0u, 0u));
 }
 
+void Graphics::SetProjection(DirectX::FXMMATRIX proj) noexcept
+{
+	projection = proj;
+}
+
+DirectX::XMMATRIX Graphics::GetProjection() const noexcept
+{
+	return DirectX::XMMATRIX();
+}
 
 
 // Graphics exception 

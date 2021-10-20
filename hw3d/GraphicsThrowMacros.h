@@ -17,3 +17,11 @@
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
 #define GFX_THROW_INFO_ONLY(call) (call)
 #endif
+
+// 下面的宏用于导入infomanager 到本作用域中
+// this.GetInfoManager(Graphics& gfx) 必须写出来
+#ifdef NDEBUG
+#define INFOMAN(gfx) HRESULT hr
+#else //如果是调试模式下 搞到Graphics中的 infoManager变量
+#define INFOMAN(gfx) HRESULT hr; DxgiInfoManager& infoManager = GetInfoManager((gfx))
+#endif
