@@ -65,18 +65,9 @@ public:
 	//前后缓存翻转，这个函数是其他所有函数的前提，如果不翻转后缓存到前缓存，将永远看不到内容
 	void EndFrame();
 
-	//创建一个函数去清理目标视图
-	/*
-		D3D11DeviceContext::ClearRenderTargetView
-		将渲染目标中的所有元素设置为一个值。
-		void ClearRenderTargetView(
-			[in] ID3D11RenderTargetView *pRenderTargetView, //传入渲染目标视图
-			[in] const FLOAT[4]        ColorRGBA            //一个4分量数组，表示填充渲染目标的颜色。
-		);
-	*/
 	void ClearBuffer(float red, float green, float blue) noexcept;
 	//绘制三角形
-	void DrawTestTriangle(float angle);
+	void DrawTestTriangle(float angle, float x, float y);
 private:
 #ifndef NDEBUG    //ifndef 是 if no def  没有定义 不是DEBUG 相当于是DEBUG- - 好你妈拗口
 	DxgiInfoManager infoManager;

@@ -143,7 +143,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void Graphics::DrawTestTriangle( float angle)
+void Graphics::DrawTestTriangle( float angle,float x, float y)
 {
 	HRESULT hr;
 
@@ -237,11 +237,11 @@ void Graphics::DrawTestTriangle( float angle)
 	const ConstantBuffer cb =
 	{
 		{
-			//直接用dx::XMMatrixRotationZ(angle) * dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) 也是可以的
-			dx::XMMatrixMultiply(
-				dx::XMMatrixRotationZ(angle),
-				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f)
-			)
+			//这样会比在shader中用row_major要快得多，因为这是在CPU转置一次，之前是在GPU转置每一次
+			dx::XMMatrixTranspose(dx::XMMatrixRotationZ(angle) *
+				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) * 
+				dx::XMMatrixTranslation(x, y, 0.0f)
+			) 
 		}
 	};
 	

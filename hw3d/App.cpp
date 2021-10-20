@@ -25,10 +25,13 @@ int App::Go()
 //每一帧调用,注意这是一帧的内容  EndFrame就是结束一帧
 void App::DoFrame()
 {
-	const float c = sin(timer.Peek()) / 2.0f + 0.5f; //time.peek()是从程序运行到现在的时间，c是个0~1变化的数 这也是颜色变化的范围
-	wnd.Gfx().ClearBuffer(c, c, 1.0f);				 //红绿色是变化的数字
-	wnd.Gfx().DrawTestTriangle(timer.Peek());
-	wnd.Gfx().EndFrame(); //Gfx()返回的是指向Graphics对象的指针,调用图形类中的函数
+	const float c = sin(timer.Peek()) / 2.0f + 0.5f; 
+	wnd.Gfx().ClearBuffer(c, c, 1.0f);				 
+	wnd.Gfx().DrawTestTriangle(
+		timer.Peek(), 
+		wnd.mouse.GetPosX()/400.0f - 1,  //视口坐标系中，X轴从左往右-1 ~ 1 而鼠标类从左到右0~800 所以要/400 -1 把范围限制到(-1, 1)
+		-wnd.mouse.GetPosY()/300.0f + 1); //Y轴同理，不同的是 视口Y轴从下往上-1 ~ 1，这与鼠标类中鼠标往下是增加相反 所以要取反
+	wnd.Gfx().EndFrame(); 
 } 
 
 
