@@ -145,6 +145,18 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 
 void Graphics::DrawTestTriangle( float angle,float x, float y)
 {
+	//XMVector
+	//XM系列的接口都只返回向量，要取得某特定的参数 必须用他的接口去拿
+	dx::XMVECTOR v = dx::XMVectorSet(3.0f, 3.0f, 0.0f, 0.0f);
+	auto result = dx::XMVector3Dot(v,v);		//4/3/2/dot是表示 把传入向量的前几个值进行点乘
+	auto xx = dx::XMVectorGetX(result);			
+	//调试方法 断点后逐句运行 可以看变量的数值
+
+	//XMMatrix
+	//XMVector3Transform 对向量做变换，即v*后面的矩阵，而后面的矩阵是个缩放矩阵
+	result = dx::XMVector3Transform(v, dx::XMMatrixScaling(1.5f, 0.0f, 0.0f));
+	xx = dx::XMVectorGetX(result);			//应该是4.5
+	xx = dx::XMVectorGetY(result);			//应该是0 
 	HRESULT hr;
 
 	// Input Assembler输入装配器阶段
