@@ -173,6 +173,7 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 		{
 			float x;
 			float y;
+			float z;
 		}pos;
 		struct
 		{
@@ -186,12 +187,14 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
 	Vertex vertices[] =
 	{
-		{0.0f, 0.5f, 255, 0, 0, 0},
-		{0.5f, -0.5f, 0, 255, 0, 0},
-		{-0.5f, -0.5f, 0, 0, 255, 0},
-		{-0.3f, 0.3f, 0, 255, 0, 0},
-		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -1.0f, 255, 0, 0, 0}, //这里改成-1 让最下面的顶点触底，发现现象是 800*600的窗口，这个点在旋转时都能触底，所以图形被拉伸了 想办法让他不拉伸怎么办？ X轴方向的变换矩阵*3/4
+		{-1.0f, -1.0f, -1.0f  , 255, 0, 0},
+		{1.0f, -1.0f, -1.0f   , 0, 255, 0},
+		{-1.0f, 1.0f, -1.0f   , 0, 0, 255},
+		{1.0f, 1.0f, -1.0f    , 255, 255, 0},
+		{-1.0f, -1.0f, 1.0f   , 255, 0, 255},
+		{1.0f, -1.0f, 1.0f    , 255, 0, 0},
+		{-1.0f, 1.0f, 1.0f    , 0, 255, 255},
+		{1.0f, 1.0f, 1.0f     , 255, 255, 255},
 	};
 
 	D3D11_SUBRESOURCE_DATA sd = {};
@@ -220,10 +223,12 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	// —————create index buffer
 	const unsigned short indices[] = //索引默认是16位
 	{
-		0,1,2,
-		0,2,3,
-		0,4,1,
-		2,1,5,
+		0,2,1, 2,3,1,
+		1,3,5, 3,7,5,
+		2,6,3, 3,6,7,
+		4,5,7, 4,7,6,
+		0,4,2, 2,4,6,
+		0,1,4, 1,5,4
 	};
 	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
 	D3D11_BUFFER_DESC ibd = {};
@@ -249,10 +254,11 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	const ConstantBuffer cb =
 	{
 		{
-			//这样会比在shader中用row_major要快得多，因为这是在CPU转置一次，之前是在GPU转置每一次
-			dx::XMMatrixTranspose(dx::XMMatrixRotationZ(angle) *
-				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) * 
-				dx::XMMatrixTranslation(x, y, 0.0f)
+			dx::XMMatrixTranspose(
+				dx::XMMatrixRotationZ(angle) *
+				dx::XMMatrixRotationX(angle) *
+				dx::XMMatrixTranslation(x, y, 4.0f) *
+				dx::XMMatrixPerspectiveLH(1, 3.0f / 4.0f, 0.5f, 10.0f)//标准来说是1*1的正方形， 但是我们窗口是800*400 所以 这里宽1 高3/4
 			) 
 		}
 	};
@@ -294,8 +300,8 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	// 描述符,下面这是描述符数组
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
-		{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0},//数据格式后缀UNORM 会把你输入的数据强制转换成 该后缀指定的类型 颜色这里 我们要UNORM 即卡死在0~1
+		{"Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},//想要添加z轴 必须在这里修改，再加一个通道
+		{"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12u, D3D11_INPUT_PER_VERTEX_DATA, 0},  //并且修改颜色参数 偏移量
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
 		ied, (UINT)std::size(ied),

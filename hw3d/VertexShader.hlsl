@@ -22,10 +22,11 @@ cbuffer cBuf
 };
 
 //我们定义的颜色是4个参数RGBA ，这里只拿3个 忽略第四个是可以的
-VSOut main(float2 pos : Position, float3 color : Color)
+//输入位置参数改为3维
+VSOut main(float3 pos : Position, float3 color : Color)
 {
 	VSOut vso;
-	vso.pos = mul(float4(pos.x, pos.y, 1.0f, 1.0f), transform);//注意是右乘，因为这是行向量，1*4 · 4*4 = 1*4 
+	vso.pos = mul(float4(pos, 1.0f), transform);//注意是右乘，因为这是行向量，1*4 · 4*4 = 1*4 
 	vso.color = color;   
 	return vso;
 }
