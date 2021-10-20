@@ -1,10 +1,15 @@
-/*
-	记得改执行文件输出目录，和着色器类型
-	输出：每个像素颜色
-	输入：不需要，因为光栅化阶段已经确定每个像素的位置，然后像素着色器在每个像素上进行颜色指定
-*/
-//我们要用自己在外面定义的颜色 所以要接收输入值
-float4 main(float3 color : Color) : SV_Target
+
+//定义常数缓存，缓存中存放的是 一个float4类型的数组
+cbuffer CBuf
 {
-	return float4(color, 1.0f); //这个颜色是光栅化器插值过后的颜色
+	float4 face_colors[6];
+};
+
+
+//uint 无符号整型
+//SV_PritiveID 是系统变量 原始ID 这会让渲染管线给每个三角形生成原始ID(从0开始到三角形个数-1)
+//遍历所有三角形ID 映射到常数缓存中存放的颜色数组中 返回对应颜色 
+float4 main( uint tid : SV_PrimitiveID) : SV_Target
+{
+	return face_colors[tid / 2];// 除以2是因为每个面都有两个三角形 所以让挨着的两个三角形映射到同一个颜色 
 }

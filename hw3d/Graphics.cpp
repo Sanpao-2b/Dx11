@@ -175,26 +175,18 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 			float y;
 			float z;
 		}pos;
-		struct
-		{
-			unsigned char r; //1B
-			unsigned char g;
-			unsigned char b;
-			unsigned char a;
-		}color;
-
 	};
 	// 存放3个点,注意必须顺时针，D3D会进行反面剔除，用顺时针和逆时针区分正反面
 	Vertex vertices[] =
 	{
-		{-1.0f, -1.0f, -1.0f  , 255, 0, 0},
-		{1.0f, -1.0f, -1.0f   , 0, 255, 0},
-		{-1.0f, 1.0f, -1.0f   , 0, 0, 255},
-		{1.0f, 1.0f, -1.0f    , 255, 255, 0},
-		{-1.0f, -1.0f, 1.0f   , 255, 0, 255},
-		{1.0f, -1.0f, 1.0f    , 255, 0, 0},
-		{-1.0f, 1.0f, 1.0f    , 0, 255, 255},
-		{1.0f, 1.0f, 1.0f     , 255, 255, 255},
+		{-1.0f, -1.0f, -1.0f},
+		{1.0f, -1.0f, -1.0f},
+		{-1.0f, 1.0f, -1.0f},
+		{1.0f, 1.0f, -1.0f},
+		{-1.0f, -1.0f, 1.0f},
+		{1.0f, -1.0f, 1.0f},
+		{-1.0f, 1.0f, 1.0f},
+		{1.0f, 1.0f, 1.0f},
 	};
 
 	D3D11_SUBRESOURCE_DATA sd = {};
@@ -246,7 +238,6 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
 
 	// ————create constant buffer for transformation matrix
-
 	struct ConstantBuffer 
 	{
 		dx::XMMATRIX transform; //4*4 float 不能直接访问其中单个值 只能通过接口
@@ -278,6 +269,48 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	// ————bind constant buffer to vertex shader 直接绑定相应着色器
 	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
 
+	// 让每个面显示单独的颜色，可以用几何着色器，
+	// 另一个方法：给每个三角形 一个唯一ID索引 从0开始 建立一个颜色数组 直接传给pixel shader
+	// 创建一个用于绑定到像素着色器的常数缓存 存颜色数组，然后像素着色器去查找
+
+	// 跟之前没啥区别 缓存要存放的每个元素是什么类型(自定义类型)，存放多少个(数组)
+	struct ConstantBuffer2
+	{
+		struct
+		{
+			float r;
+			float g;
+			float b;
+			float a;
+		} face_colors[6]; //一个颜色数组 每个元素都包含rgba 这样写之后，用ConstantBuffer2创建变量 自动就会成为一个数组包含留个元素
+	};
+	const ConstantBuffer2 cb2 =
+	{
+		{
+			{1.0f,0.0f,1.0f}, //每个三角形对应其中一个颜色值
+			{1.0f,0.0f,0.0f},
+			{0.0f,1.0f,0.0f},
+			{0.0f,0.0f,1.0f},
+			{1.0f,1.0f,1.0f},
+			{0.0f,1.0f,1.0f},
+		}
+	};
+	wrl::ComPtr<ID3D11Buffer> pConstantBuffer2;
+	D3D11_BUFFER_DESC cbd2;
+	cbd2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbd2.Usage = D3D11_USAGE_DEFAULT;	
+	cbd2.CPUAccessFlags = 0u;//CPU写权限
+	cbd2.MiscFlags = 0u;
+	cbd2.ByteWidth = sizeof(cb2);
+	cbd2.StructureByteStride = 0u;     //为0即可 不必深究
+
+	D3D11_SUBRESOURCE_DATA csd2 = {};
+	csd2.pSysMem = &cb2;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&cbd2, &csd2, &pConstantBuffer2));
+	// 绑定这个颜色常熟缓存到渲染管线
+	pContext->PSSetConstantBuffers(0u, 1u, pConstantBuffer2.GetAddressOf());
+
+
 	// ————创建像素着色器
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
 	wrl::ComPtr<ID3DBlob> pBlob;
@@ -301,7 +334,6 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
 		{"Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},//想要添加z轴 必须在这里修改，再加一个通道
-		{"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12u, D3D11_INPUT_PER_VERTEX_DATA, 0},  //并且修改颜色参数 偏移量
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
 		ied, (UINT)std::size(ied),
