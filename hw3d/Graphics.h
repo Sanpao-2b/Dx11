@@ -5,8 +5,17 @@
 #include <wrl.h>    //COM组件 包含了COMPointer类 比如Comptr指向一个COM对象，并且有引用计数
 #include <vector>
 #include "DxgiInfoManager.h"
+#include <d3dcompiler.h>
+#include <DirectXMath.h>
+#include <memory>
+#include <random>
+
 class Graphics
 {
+	// ———————————————————— 基类是友元，他的儿子们并不会自动成为友元！————————————————————
+	// 那他儿子们想访问这个类中的私有成员怎么办？
+	// 友元Bindable可以访问Graphics，那么我们在Bindable中提供函数返回这里的成员属性指针，而子类们可以访问Bindable的函数得到这些指针
+	friend class Bindable;
 public:
 	class Exception : public ChiliException
 	{
@@ -15,7 +24,6 @@ public:
 		//请看HrException的默认构造函数的实现
 		using ChiliException::ChiliException;
 	};
-
 	//抓HRESULT
 	class HrException : public Exception
 	{
@@ -45,7 +53,6 @@ public:
 	private:
 		std::string info;   //用于那些没有HRESULT返回值的函数,用info存放输出窗口抓到的信息
 	};
-
 	class DeviceRemovedException : public HrException
 	{
 		using HrException::HrException;
@@ -61,22 +68,22 @@ public:
 	Graphics& operator=(const Graphics&) = delete;
 	~Graphics() = default;
 	
-	//给图形类添加一些行为
 	//前后缓存翻转，这个函数是其他所有函数的前提，如果不翻转后缓存到前缓存，将永远看不到内容
 	void EndFrame();
-
+	//创建一个函数去清理目标视图
 	void ClearBuffer(float red, float green, float blue) noexcept;
-	//绘制三角形
-	void DrawTestTriangle(float angle, float x, float y);
+	void DrawIndexed(UINT count) noexcept(!IS_DEBUG);
+	void SetProjection(DirectX::FXMMATRIX proj) noexcept;
+	DirectX::XMMATRIX GetProjection() const noexcept;
+
 private:
-#ifndef NDEBUG    //ifndef 是 if no def  没有定义 不是DEBUG 相当于是DEBUG- - 好你妈拗口
+	DirectX::XMMATRIX projection;
+#ifndef NDEBUG   
 	DxgiInfoManager infoManager;
-#endif //仅在调式模式下存在，  release模式不会有
-	
+#endif 
 	Microsoft::WRL::ComPtr<ID3D11Device> pDevice;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
 };
 

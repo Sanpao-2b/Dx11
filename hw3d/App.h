@@ -8,14 +8,12 @@ public:
 	App();
 	//开始游戏循环
 	int Go();
+	~App();
 private:
-	//存放每一帧的游戏逻辑
 	void DoFrame();
 private:
-	//应用程序  有窗口没毛病吧？
-	Window wnd;
-
-	//给应用程序添加一个计时器
-	ChiliTimer timer;
+	Window wnd;						//窗口对象
+	ChiliTimer timer;				//计时器
+	std::vector<std::unique_ptr<class Box>> boxes;  //放一堆方块的 容器
 };
 
