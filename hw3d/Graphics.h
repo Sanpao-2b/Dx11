@@ -77,13 +77,6 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
 };
 
-/*
-	unique_ptr 去指向COM对象，不能自动释放COM对象 还必须手动释放
-	并且如果需要pp去接收返回值，由于unique_ptr是封装的，获取不到内部那个指针的地址，所以无法作为pp传入
-	从而我们必须用普通指针的pp去接收返回值，然后赋值给unique_ptr 这样很麻烦
-	COM对象是可以归多个Comptr去指向的，并且有引用计数，而unique_ptr必须独占
-	comptr还有很多好用的函数。
-	最重要的是&
-*/

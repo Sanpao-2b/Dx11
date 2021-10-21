@@ -57,22 +57,6 @@ Graphics::Graphics(HWND hWnd)
 	//用于检查d3d函数返回值,因为宏里面是用hr去接收返回值的，所以必须要有一个
 	HRESULT hr;
 	// create device and front/back buffers, and swap chain and rendering context
-/*
-	HRESULT D3D11CreateDeviceAndSwapChain(
-		[in, optional]  IDXGIAdapter               *pAdapter,      创建设备时要使用的视频适配器的指针,NULL使用默认适配器
-						D3D_DRIVER_TYPE            DriverType,     传入软/硬驱动程序类型来创建
-						HMODULE                    Software,	   如果上面选择软件渲染，则这里传入软光栅化器的句柄
-						UINT                       Flags,          标签不需要
-		[in, optional]  const D3D_FEATURE_LEVEL    *pFeatureLevels,指向D3D_FEATURE_LEVEL数组的指针，它决定了要尝试创建的要素级别的顺序。为NULL，则使用默认数组：
-						UINT                       FeatureLevels,  上面那个数组中的元素数量。
-						UINT                       SDKVersion,     SDK版本
-		[in, optional]  const DXGI_SWAP_CHAIN_DESC *pSwapChainDesc,交换链的描述结构体
-		[out, optional] IDXGISwapChain             **ppSwapChain,  
-		[out, optional] ID3D11Device               **ppDevice,
-		[out, optional] D3D_FEATURE_LEVEL          *pFeatureLevel, 返回一个指向D3D_FEATURE_LEVEL的指针，数组中的第一个元素。若NULL，如果你并不需要确定哪些功能级别支持的输入。
-		[out, optional] ID3D11DeviceContext        **ppImmediateContext
-);
-*/
 	GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
 		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
@@ -86,16 +70,8 @@ Graphics::Graphics(HWND hWnd)
 		&pDevice,     
 		nullptr,      
 		&pContext   
-		/*
-			pSwap,pDevice这几个都是智能指针了 看起来&是取的智能指针的地址啊 我们需要的是它内部维护的真正的指针的地址去填充这个指针，
-			其实是因为Comptr重载了&运算符，可以正确返回内部维护的那个普通指针的地址 正确的pp。但是！Comptr如果取地址 他首先会释放自己指向的那个空间，然后再返回空间的地址，
-			很合理吧 因为我想填充，所以先释放掉原来存的那块内存的东西，这样不会造成内存泄漏啊，之后就无法使用那块内存的东西了。
-			我们想填充，这里这样用&是没错的，因为Comptr还没指向任何有用的东西,释放了个寂寞。但有时候你不想填充指针，只是想单纯的获取我维护的指针的真的地址，&一用 直接释放了。。。
-			真要获取维护的那个指针的地址请使用pBackBuffer->GetAddressOf()，&pSwap的效果其实就是pSwap->ReleaseAndGetAddress()一样 获取并且释放
-		*/
 	));
-	//获取交换链的后缓存，创建一个智能指针用于保存它(创建这个指针的目的：通过指向一个Texture对象创建一个渲染目标视图)
-	//智能指针其实是个模板类，重载了->运算符，使他和普通指针一样的用法，但是如果要获得这个指针的地址即pp 要用Get()函数
+	//创建这个指针的目的：通过指向一个Texture对象创建一个渲染目标视图
 	wrl::ComPtr<ID3D11Resource> pBackBuffer;
 
 	//因为我们用的DXGI_SWAP_EFFECT_DISCARD所以第一个参数必须是0即只能读写编号0的缓存；用于操纵这个缓存的"接口的uuid“；指向后台缓冲区接口的指针
@@ -103,12 +79,47 @@ Graphics::Graphics(HWND hWnd)
 	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer));
 
 	//用获取的这个资源去创建 渲染目标视图
-	//如果此函数 抛出异常了，程序就终止了 pBackBuffer指向的内存，就不能正常释放了，我们需要把指针包裹在一个对象里，当该对象超出范围时，会自动释放这个指针
 	GFX_THROW_INFO(pDevice->CreateRenderTargetView(
-		pBackBuffer.Get(),//获取指向的那个对象的地址，不能用pBackBuffer->Get()，因为被指向的Texture没有Get()，pBackBuffer本质是对象，必须用"."，调用自己的函数
+		pBackBuffer.Get(),
 		nullptr, //没传入渲染目标视图的描述结构体，使用默认方式创建即可
-		&pTarget //[out] 用一个指针变量填充渲染目标视图
+		&pTarget 
 	));
+
+	// ————create depth stebcil state实现深度缓存最好在构造函数之中 
+	D3D11_DEPTH_STENCIL_DESC dsDesc = {};			
+	dsDesc.DepthEnable = TRUE;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; //允许对缓冲区的写入
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;			//若深度值小于原本值则改写
+	wrl::ComPtr<ID3D11DepthStencilState> pDSState;
+	GFX_THROW_INFO(pDevice->CreateDepthStencilState(&dsDesc, &pDSState));
+
+	// bind depth state to the pipeline(Output Merger)  这就是它该去的地方
+	pContext->OMSetDepthStencilState(pDSState.Get(), 1u);
+
+	// ————create depth stencil texture
+	wrl::ComPtr<ID3D11Texture2D> pDepthStencil;
+	D3D11_TEXTURE2D_DESC descDepth = {};	  //纹理的描述
+	descDepth.Width = 800u;
+	descDepth.Height = 600u;				  //必须跟swap chain 中的宽高等同
+	descDepth.MipLevels = 1u;				  //mipmap等级  目前1就行了
+	descDepth.ArraySize = 1u;				  //只需要一个texture 用于深度缓存
+	descDepth.Format = DXGI_FORMAT_D32_FLOAT; //重要！ 描述texture没一个元素的格式
+	descDepth.SampleDesc.Count = 1u;		  //用于anti-aliasing
+	descDepth.SampleDesc.Quality = 0u;		  
+	descDepth.Usage = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	GFX_THROW_INFO(pDevice->CreateTexture2D(&descDepth, nullptr, &pDepthStencil));
+
+	// ————跟后缓存一样，这里也要为其创建一个 taget view
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;    //跟texture的格式相同 或者是DXGI_FORMAT_UNKNOWN 他自己会获取那个格式
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0u;		   //没有设置mipmap 所以这里0吧
+	GFX_THROW_INFO(pDevice->CreateDepthStencilView(pDepthStencil.Get(), &descDSV, &pDSV));
+
+	// ————bind depth stencil view to OM 这里绑定后 后面的绑定选入按目标就不用了 删掉
+	// 这里是绑定了前面用后缓存创建出来的渲染目标，然后还传入了深度模板缓存 进行了绑定
+	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), pDSV.Get());
 }
 
 
@@ -141,6 +152,8 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	//清除渲染目标视图需要一个浮点数组
 	const float color[] = { red, green, blue, 1.0f };
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
+	//清理目标视图的时候还要清理深度缓存，所以才需要一个深度缓存的指针在成员变量中，每一帧清理它
+	pContext->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);
 }
 
 void Graphics::DrawTestTriangle( float angle,float x, float z)
@@ -343,9 +356,6 @@ void Graphics::DrawTestTriangle( float angle,float x, float z)
 	));
 	// ————bind Inputlayout 绑定到渲染管线
 	pContext->IASetInputLayout(pInputLayout.Get());
-
-	// ————绑定渲染目标 Render Target 
-	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
 	
 	// ————绑定Primitive Topology 原始拓扑
 	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);  
