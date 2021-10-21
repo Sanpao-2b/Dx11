@@ -27,6 +27,13 @@ void App::DoFrame()
 {
 	const float c = sin(timer.Peek()) / 2.0f + 0.5f; 
 	wnd.Gfx().ClearBuffer(c, c, 1.0f);				 
+	
+	// cube1
+	wnd.Gfx().DrawTestTriangle(
+		-timer.Peek(),
+		0.0f,  
+		0.0f);
+	// cube1
 	wnd.Gfx().DrawTestTriangle(
 		timer.Peek(), 
 		wnd.mouse.GetPosX()/400.0f - 1,  //视口坐标系中，X轴从左往右-1 ~ 1 而鼠标类从左到右0~800 所以要/400 -1 把范围限制到(-1, 1)

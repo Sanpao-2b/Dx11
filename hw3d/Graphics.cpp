@@ -143,7 +143,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void Graphics::DrawTestTriangle( float angle,float x, float y)
+void Graphics::DrawTestTriangle( float angle,float x, float z)
 {
 	//XMVector
 	//XM系列的接口都只返回向量，要取得某特定的参数 必须用他的接口去拿
@@ -248,7 +248,7 @@ void Graphics::DrawTestTriangle( float angle,float x, float y)
 			dx::XMMatrixTranspose(
 				dx::XMMatrixRotationZ(angle) *
 				dx::XMMatrixRotationX(angle) *
-				dx::XMMatrixTranslation(x, y, 4.0f) *
+				dx::XMMatrixTranslation(x, 0.0f, z+4.0f) *            //运行后鼠标控制其中一个cube放最远，它比另一个小 说明更远，应该被遮挡 而却没被遮挡， 因为没有"深度缓存"
 				dx::XMMatrixPerspectiveLH(1, 3.0f / 4.0f, 0.5f, 10.0f)//标准来说是1*1的正方形， 但是我们窗口是800*400 所以 这里宽1 高3/4
 			) 
 		}
