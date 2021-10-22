@@ -102,7 +102,7 @@ Box::Box(Graphics & gfx,
 	AddBind(std::make_unique<InputLayout>(gfx, ied, pvsbc));
 
 	AddBind(std::make_unique<Topology>(gfx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
-	//
+	
 	AddBind(std::make_unique<TransformCbuf>(gfx, *this));
 }
 

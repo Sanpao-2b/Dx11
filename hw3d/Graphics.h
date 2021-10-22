@@ -72,7 +72,7 @@ public:
 	void EndFrame();
 	//创建一个函数去清理目标视图
 	void ClearBuffer(float red, float green, float blue) noexcept;
-	void DrawIndexed(UINT count);
+	void DrawIndexed(UINT count) noexcept(!IS_DEBUG);
 	void SetProjection(DirectX::FXMMATRIX proj) noexcept;
 	DirectX::XMMATRIX GetProjection() const noexcept;
 
@@ -85,5 +85,6 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
 };
 

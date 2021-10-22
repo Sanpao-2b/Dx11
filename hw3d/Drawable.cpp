@@ -3,7 +3,7 @@
 #include "IndexBuffer.h"
 #include <cassert>
 #include <typeinfo>
-void Drawable::Draw(Graphics & gfx) const noexcept
+void Drawable::Draw(Graphics & gfx) const noexcept(!IS_DEBUG)
 {
 	for (auto& b : binds) //遍历所有bindable对象，绑定他们
 	{
@@ -14,7 +14,7 @@ void Drawable::Draw(Graphics & gfx) const noexcept
 }
 
 // 添加其他的bindable用这个
-void Drawable::AddBind(std::unique_ptr<Bindable> bind) noexcept
+void Drawable::AddBind(std::unique_ptr<Bindable> bind) noexcept(!IS_DEBUG)
 {
 	//用断言函数 确保我们添加的不是索引缓存 才能继续执行 否则 终止程序 
 	assert("*Must* use AddIndexBuffer to bind index buffer" && typeid(*bind) != typeid(IndexBuffer));

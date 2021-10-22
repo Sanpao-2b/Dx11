@@ -1,7 +1,7 @@
 #include "PixelShader.h"
 #include "GraphicsThrowMacros.h"
 
-PixelShader::PixelShader(Graphics gfx, const std::wstring & path) //path是像素着色器文件路径
+PixelShader::PixelShader(Graphics& gfx, const std::wstring & path) //path是像素着色器文件路径
 {
 	INFOMAN(gfx);
 
@@ -13,5 +13,4 @@ PixelShader::PixelShader(Graphics gfx, const std::wstring & path) //path是像素着
 void PixelShader::Bind(Graphics & gfx) noexcept
 {
 	GetContext(gfx)->PSSetShader(pPixelShader.Get(), nullptr, 0u);
-
 }
