@@ -49,8 +49,8 @@ void App::DoFrame()
 	wnd.Gfx().ClearBuffer(0.07f, 0.0f, 0.12f);//每帧都要执行清屏操作 不然看个寂寞
 	for (auto& b : boxes)
 	{
-		b->Update(dt); //每帧都改变 每一个盒子对象的 变换属性为新的随机值
-		b->Draw(wnd.Gfx());
+		b->Update(dt);		//每帧都改变 每一个盒子对象的 变换属性为新的随机值
+		b->Draw(wnd.Gfx()); //Draw函数里 对binds容器中的 可绑定的东西 进行批量绑定
 	}
 	wnd.Gfx().EndFrame();
 }

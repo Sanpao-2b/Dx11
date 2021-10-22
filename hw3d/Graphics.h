@@ -72,7 +72,7 @@ public:
 	void EndFrame();
 	//创建一个函数去清理目标视图
 	void ClearBuffer(float red, float green, float blue) noexcept;
-	void DrawIndexed(UINT count) noexcept(!IS_DEBUG);
+	void DrawIndexed(UINT count);
 	void SetProjection(DirectX::FXMMATRIX proj) noexcept;
 	DirectX::XMMATRIX GetProjection() const noexcept;
 

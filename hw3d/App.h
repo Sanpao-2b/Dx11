@@ -12,8 +12,8 @@ public:
 private:
 	void DoFrame();
 private:
-	Window wnd;						//窗口对象
-	ChiliTimer timer;				//计时器
+	Window wnd;			//窗口对象
+	ChiliTimer timer;	//计时器
 	std::vector<std::unique_ptr<class Box>> boxes;  //放一堆方块的 容器
 };
 

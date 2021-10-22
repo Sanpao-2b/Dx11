@@ -42,17 +42,18 @@ Box::Box(Graphics & gfx,
 		{ -1.0f,1.0f,1.0f },
 		{ 1.0f,1.0f,1.0f },
 	};
-	// 在VertexBuffer构造的时候传入了gfx和vertices 即完成了顶点缓存的创建，然后再调用addbind 把该缓存放到binds缓存指针容器中
+	// 在VertexBuffer构造的时候传入了gfx和vertices 即完成了顶点缓存的创建，然后再调用addbind 把该缓存放到binds缓存指针容器中 等待绑定到渲染管线
 	AddBind(std::make_unique<VertexBuffer>(gfx, vertices));
 	// pvs存放顶点着色器cso文件的指针
 	auto pvs = std::make_unique<VertexShader>(gfx, L"VertexShader.cso");
-	// 着色器Blob字节码 用于创建Inputlayout
+	// 暂时存放着色器字节码 用于创建Inputlayout 否则调用std::move后 psv装的东西就莫得了
 	auto pvsbc = pvs->GetBytecode();
 
 	AddBind(std::move(pvs));
 
 	AddBind(std::make_unique<PixelShader>(gfx, L"PixelShader.cso"));
 
+	// 索引缓存
 	const std::vector<unsigned short> indices =
 	{
 		0,2,1, 2,3,1,
@@ -63,7 +64,9 @@ Box::Box(Graphics & gfx,
 		0,1,4, 1,5,4
 	};
 
+	// 把索引缓存放进binds容器中 准备绑定
 	AddIndexBuffer(std::make_unique<IndexBuffer>(gfx, indices));
+
 
 	struct ConstantBuffer2
 	{
@@ -99,11 +102,11 @@ Box::Box(Graphics & gfx,
 	AddBind(std::make_unique<InputLayout>(gfx, ied, pvsbc));
 
 	AddBind(std::make_unique<Topology>(gfx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
-
+	//
 	AddBind(std::make_unique<TransformCbuf>(gfx, *this));
 }
 
-//传入delta time 更新这些变换位置 或者旋转角度
+//传入delta time 更新这些变换位置 或者旋转角度 每帧
 void Box::Update(float dt) noexcept
 {
 	roll += droll * dt;
@@ -114,9 +117,10 @@ void Box::Update(float dt) noexcept
 	chi += dchi * dt;
 }
 
-//计算矩阵，若干个变换矩阵先做乘法变成一个矩阵 
+//返回一个变换矩阵， 这个矩阵是世界坐标的变换矩阵 还没经过投影 投影矩阵会在绑定前一刻 加进去
 DirectX::XMMATRIX Box::GetTransformXM() const noexcept
 {
+	//注意 roll pitch yaw每帧都在变化 然后
 	return DirectX::XMMatrixRotationRollPitchYaw(pitch, yaw, roll) * //绕box的中心旋转
 			DirectX::XMMatrixTranslation(r, 0.0f, 0.0f) *			 //让box离开中心点
 			DirectX::XMMatrixRotationRollPitchYaw(theta, phi, chi) * //绕世界中心旋转

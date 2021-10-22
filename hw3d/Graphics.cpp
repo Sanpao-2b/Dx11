@@ -122,8 +122,11 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)
+void Graphics::DrawIndexed(UINT count) 
 {
+	//StartIndexLocation：表示从第几个索引开始画
+	//BaseVertexLocation：画的时候，每一个索引都加这个数字
+	//要先把索引缓存绑定到渲染管线
 	GFX_THROW_INFO_ONLY(pContext->DrawIndexed(count, 0u, 0u));
 }
 

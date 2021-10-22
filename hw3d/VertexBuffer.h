@@ -17,7 +17,7 @@ public:
 		bd.Usage = D3D11_USAGE_DEFAULT;
 		bd.CPUAccessFlags = 0u;
 		bd.MiscFlags = 0u;
-		bd.ByteWidth = UINT(sizeof(V) * vertices.size());
+		bd.ByteWidth = UINT(sizeof(V) * vertices.size());  //.size()返回容器元素个数
 		bd.StructureByteStride = sizeof(V);
 
 		D3D11_SUBRESOURCE_DATA sd = {};
