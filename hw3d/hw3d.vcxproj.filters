@@ -34,6 +34,9 @@
     <Filter Include="源文件\Drawable">
       <UniqueIdentifier>{0a390e89-a9e0-4ac0-a30b-1f48df8201f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Geometry">
+      <UniqueIdentifier>{84345a4c-3090-4491-adc7-73feda719f72}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -181,6 +184,27 @@
     </ClInclude>
     <ClInclude Include="DrawableBase.h">
       <Filter>头文件\Drawable</Filter>
+    </ClInclude>
+    <ClInclude Include="ChiliMath.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Cube.h">
+      <Filter>头文件\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Cone.h">
+      <Filter>头文件\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Plane.h">
+      <Filter>头文件\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Prism.h">
+      <Filter>头文件\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Sphere.h">
+      <Filter>头文件\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexedTriangleList.h">
+      <Filter>头文件\Geometry</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

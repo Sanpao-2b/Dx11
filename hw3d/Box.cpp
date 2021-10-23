@@ -1,6 +1,7 @@
 #include "Box.h"
 #include "BindableBase.h"
 #include "GraphicsThrowMacros.h"
+#include "Sphere.h"
 
 Box::Box(Graphics & gfx, 
 	std::mt19937 & rng,
@@ -20,32 +21,22 @@ Box::Box(Graphics & gfx,
 	theta(adist(rng)),
 	phi(adist(rng))
 {
+	namespace dx = DirectX;
+
 	// 每个box实例都检查一遍staticBinds是已经初始化过，第一个box执行时 没有初始化 执行if内部代码， 后续box都不会再执行了
 	if (!IsStaticInitialized())
 	{
 		struct Vertex
 		{
-			struct
-			{
-				float x;
-				float y;
-				float z;
-			}pos;
+			dx::XMFLOAT3 pos;
 		};
-		// 顶点
-		const std::vector<Vertex> vertices =
-		{
-			{ -1.0f,-1.0f,-1.0f },
-			{ 1.0f,-1.0f,-1.0f },
-			{ -1.0f,1.0f,-1.0f },
-			{ 1.0f,1.0f,-1.0f },
-			{ -1.0f,-1.0f,1.0f },
-			{ 1.0f,-1.0f,1.0f },
-			{ -1.0f,1.0f,1.0f },
-			{ 1.0f,1.0f,1.0f },
-		};
-		// 在VertexBuffer构造的时候传入了gfx和vertices 即完成了顶点缓存的创建，然后再调用addStaticBind() 把该缓存放到binds指针容器中 等待绑定到渲染管线 StaticBinds是所有可绘制实体共用的数据
-		AddStaticBind(std::make_unique<VertexBuffer>(gfx, vertices));
+
+		auto model = Sphere::Make<Vertex>();								// 创建了一个球体模型
+		model.Transform(dx::XMMatrixScaling(1.0f, 1.0f, 1.2f));  			// 对球进行缩放变换，变成椭圆
+		AddStaticBind(std::make_unique<VertexBuffer>(gfx, model.vertices)); // 创建顶点缓存
+
+		// 放到staticBinds容器中 绑定
+		AddStaticBind(std::make_unique<VertexBuffer>(gfx, model.vertices));
 		// pvs存放顶点着色器cso文件的指针
 		auto pvs = std::make_unique<VertexShader>(gfx, L"VertexShader.cso");
 		// 暂时存放着色器字节码 用于创建Inputlayout 否则调用std::move后 psv装的东西就莫得了
@@ -55,18 +46,8 @@ Box::Box(Graphics & gfx,
 
 		AddStaticBind(std::make_unique<PixelShader>(gfx, L"PixelShader.cso"));
 
-		// 索引缓存
-		const std::vector<unsigned short> indices =
-		{
-			0,2,1, 2,3,1,
-			1,3,5, 3,7,5,
-			2,6,3, 3,6,7,
-			4,5,7, 4,7,6,
-			0,4,2, 2,4,6,
-			0,1,4, 1,5,4
-		};
 		// 把索引缓存放进binds容器中 准备绑定
-		AddStaticIndexBuffer(std::make_unique<IndexBuffer>(gfx, indices));
+		AddStaticIndexBuffer(std::make_unique<IndexBuffer>(gfx, model.indices));
 
 
 		struct ConstantBuffer2
