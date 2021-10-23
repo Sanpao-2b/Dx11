@@ -11,12 +11,14 @@ class Drawable
 public:
 	Drawable() = default;
 	Drawable(const Drawable&) = delete;
+	virtual ~Drawable() = default;
 	virtual DirectX::XMMATRIX GetTransformXM() const noexcept = 0;
 	void Draw(Graphics& gfx) const noexcept(!IS_DEBUG);
 	virtual void Update(float dt) noexcept = 0;
+protected: // 只需要给儿子们用的
 	void AddBind(std::unique_ptr<Bindable> bind) noexcept(!IS_DEBUG);
 	void AddIndexBuffer(std::unique_ptr<class IndexBuffer> ibuf) noexcept(!IS_DEBUG);
-	virtual ~Drawable() = default;
+
 private:
 	// Drawable类需要访问子类中的StaticBinds 所以搞个友元 定义一个虚函数 最后会返回一个子类中的那个静态binds,此函数就是静态和动态连接的桥梁
 	virtual const std::vector<std::unique_ptr<Bindable>> & GetStaticBinds() const noexcept = 0;

@@ -5,16 +5,16 @@
 template<class T>
 class DrawableBase : public Drawable
 {
-public:
+protected: //小改动：这些函数只是给BOX Sphere等等儿子使用的
 	// 检查静态数据是否初始化，初始化只需要一次，即第一个box进行初始化后， 后续的box无需再初始化 
-	bool IsStaticInitialized() const noexcept
+	static bool IsStaticInitialized() noexcept
 	{
 		return !staticBinds.empty(); 
 	}
 	// 非索引缓存的 共用资源(static)的bindable对象 调用这个
-	void AddStaticBind(std::unique_ptr<Bindable> bind) noexcept(!IS_DEBUG)
+	static void AddStaticBind(std::unique_ptr<Bindable> bind) noexcept(!IS_DEBUG)
 	{
-		assert("*Must* use AddIndexBuffer to bind index buffer" && typeid(*bind) != typeid(IndexBuffer));
+		assert("*Must* use AddSataicIndexBuffer to bind index buffer" && typeid(*bind) != typeid(IndexBuffer));
 		staticBinds.push_back(std::move(bind));
 	}
 	// 可共用的(static)索引缓存 调用这个
