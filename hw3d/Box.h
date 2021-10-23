@@ -1,8 +1,8 @@
 #pragma once
-#include "Drawable.h"
+#include "DrawableBase.h"
 
 
-class Box : public Drawable
+class Box : public DrawableBase<Box>
 {
 public:
 	//mt19937是用来产生随机数的   uniform_real_distribution 浮点数均匀分布

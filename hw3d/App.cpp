@@ -14,7 +14,7 @@ App::App()
 	std::uniform_real_distribution<float> rdist(6.0f, 20.0f);
 	
 	//创建一堆盒子
-	for (auto i = 0; i < 80; i++)
+	for (auto i = 0; i < 3; i++)
 	{
 		boxes.push_back(std::make_unique<Box>(wnd.Gfx(), rng, adist, ddist, odist, rdist));
 	};
