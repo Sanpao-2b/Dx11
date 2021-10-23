@@ -23,7 +23,7 @@ private:
 	
 private:
 	// 这个指针存在的目的是，有些bindable可能是索引，我们需要为他们绘制索引，
-	// 注意每一个Drawable实例 只能存在一个索引缓存，具体看AddIndexBuffer代码 只允许绑定一个 
+	// 注意每一个Drawable实例 有且必须仅有一个索引缓存，具体看AddIndexBuffer代码 只允许绑定一个 
 	const class IndexBuffer* pIndexBuffer = nullptr;
 	// 唯一指针 因为要用到多态；存放的是Bindable类型的指针 Bindable是个基类型，可以是缓存、输入布局、着色器、等等东西
 	// 之后再循环遍历这个binds 调用这个里面存放的那些指针指向的Bindable内部的binds函数(多态) 进行批量绑定

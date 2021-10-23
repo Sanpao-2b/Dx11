@@ -100,11 +100,15 @@ Box::Box(Graphics & gfx,
 
 		//创建唯一指针的时候就调用了InputLayout的构造函数创建了输入布局，然后放进binds容器中
 		AddStaticBind(std::make_unique<InputLayout>(gfx, ied, pvsbc));
-
 		AddStaticBind(std::make_unique<Topology>(gfx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
-	
-		AddStaticBind(std::make_unique<TransformCbuf>(gfx, *this));
 	}
+	else // 后续box 执行else 把他们box对象内部的从母类继承的pIndexBuffer给填充上
+	{
+		SetIndexFromStatic();
+	}
+
+	// 每个box的变换矩阵 常数缓存 是不同的
+	AddBind(std::make_unique<TransformCbuf>(gfx, *this));
 }
 
 //传入delta time 更新这些变换位置 或者旋转角度 每帧

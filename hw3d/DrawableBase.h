@@ -21,20 +21,24 @@ public:
 	void AddStaticIndexBuffer(std::unique_ptr<IndexBuffer> ibuf) noexcept(!IS_DEBUG)
 	{
 		assert("Attempting to add index buffer a second time" && pIndexBuffer == nullptr);
-		pIndexBuffer = ibuf.get();				//只能初始化第一个box，后续的box没有执行if内部的绑定索引缓存 所以他们索引缓存的指针是空的
+		pIndexBuffer = ibuf.get();				//只能初始化第一个box的索引缓存，后续的box没有执行if内部的绑定索引缓存 所以他们索引缓存的指针是空的
 		staticBinds.push_back(std::move(ibuf));
 	}
-	void SetIndexfromStatic() noexcept(!IS_DEBUG)
+
+	// 这个是解决后续box 索引缓存为空的问题 我添加早了。。
+	void SetIndexFromStatic() noexcept(!IS_DEBUG)
 	{
 		assert("Attempting to add index buffer a second time" && pIndexBuffer == nullptr);
 		for ( const auto& b : staticBinds)
 		{
+			// 如果从staticBinds中 找到了 那个索引缓存(怎么找？ 挨个尝试转换成IndexBuffer*  只有索引缓存的类型是这个 会成功)，就复制到pIndexBuffer 并且return
 			if ( const auto p = dynamic_cast<IndexBuffer*>(b.get()))
 			{
 				pIndexBuffer = p;
 				return;
 			}
 		}
+		// 如果执行了这句 说明没找到 终止程序并报错
 		assert("failed to find index buffer in static binds" && pIndexBuffer != nullptr);
 	}
 

@@ -14,12 +14,12 @@ App::App()
 	std::uniform_real_distribution<float> rdist(6.0f, 20.0f);
 	
 	//创建一堆盒子
-	for (auto i = 0; i < 3; i++)
+	for (auto i = 0; i < 80; i++)
 	{
 		boxes.push_back(std::make_unique<Box>(wnd.Gfx(), rng, adist, ddist, odist, rdist));
 	};
 
-	// 根据视椎体 生成投影矩阵
+	// 根据视椎体 生成投影矩阵存在gfx中
 	wnd.Gfx().SetProjection(DirectX::XMMatrixPerspectiveFovLH(1.0f, 3.0f / 4.0f, 0.5f, 40.0f));
 }
 
